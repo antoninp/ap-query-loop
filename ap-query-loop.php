@@ -40,42 +40,40 @@ add_action( 'init', function() {
  * Register block from block.json and hook up render callback.
  */
 add_action( 'init', function() {
-	$dir = __DIR__;
+    $dir = __DIR__;
 
-	// Register editor script with proper WP dependencies (ensures ServerSideRender is available in editor)
-	$editor_handle = 'ap-query-loop-editor';
-	$editor_file   = $dir . '/editor.js';
-	if ( file_exists( $editor_file ) ) {
-		wp_register_script(
-			$editor_handle,
-			plugins_url( 'editor.js', __FILE__ ),
-			[ 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-block-editor', 'wp-server-side-render' ],
-			filemtime( $editor_file ),
-			true
-		);
-	}
+    // Register editor script with proper WP dependencies (ensures ServerSideRender is available in editor)
+    $editor_handle = 'ap-query-loop-editor';
+    $editor_file   = $dir . '/build/index.js';
+    if ( file_exists( $editor_file ) ) {
+        wp_register_script(
+            $editor_handle,
+            plugins_url( 'build/index.js', __FILE__ ),
+            [ 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-block-editor', 'wp-server-side-render' ],
+            filemtime( $editor_file ),
+            true
+        );
+    }
 
-	// Register style (frontend)
-	$style_handle = 'ap-query-loop-style';
-	$style_file   = $dir . '/style.css';
-	if ( file_exists( $style_file ) ) {
-		wp_register_style(
-			$style_handle,
-			plugins_url( 'style.css', __FILE__ ),
-			[],
-			filemtime( $style_file )
-		);
-	}
+    // Register style (frontend)
+    $style_handle = 'ap-query-loop-style';
+    $style_file   = $dir . '/build/style-index.css';
+    if ( file_exists( $style_file ) ) {
+        wp_register_style(
+            $style_handle,
+            plugins_url( 'build/style-index.css', __FILE__ ),
+            [],
+            filemtime( $style_file )
+        );
+    }
 
-	// Register block using metadata but override assets and render callback
-	register_block_type( $dir, [
-		'editor_script'   => $editor_handle,
-		'style'           => $style_handle,
-		'render_callback' => 'ap_query_loop_render_block',
-	] );
-} );
-
-/**
+    // Register block using metadata but override assets and render callback
+    register_block_type( $dir, [
+        'editor_script'   => $editor_handle,
+        'style'           => $style_handle,
+        'render_callback' => 'ap_query_loop_render_block',
+    ] );
+} );/**
  * Server-side render callback for the block.
  *
  * @param array $attributes Block attributes.
