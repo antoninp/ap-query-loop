@@ -1,0 +1,17 @@
+/* Frontend styles for AP Query Loop Gallery */
+.wp-block-ap-query-loop-gallery, .ap-query-loop-gallery {
+  display: block;
+}
+
+.ap-query-loop-basic-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.ap-query-loop-basic-gallery a,
+.ap-query-loop-basic-gallery img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
