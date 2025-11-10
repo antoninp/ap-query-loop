@@ -22,11 +22,19 @@ This block extends the functionality of WordPress's core Query Loop by rendering
 - Node.js and npm (for development only)
 - Meow Gallery Pro (optional, but recommended for enhanced gallery features)
 
-## Installation
+## Release Install
+
+Download ready-to-install ZIPs from the GitHub Releases page:
+
+- https://github.com/antoninp/ap-query-loop/releases
+
+In WordPress, go to Plugins > Add New > Upload Plugin and upload `ap-query-loop.zip`.
+
+## Manual Install
 
 1. Upload the `ap-query-loop` folder to `/wp-content/plugins/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. (Optional) Install and activate Meow Gallery Pro for enhanced gallery features
+3. (Optional) Install and activate Meow Gallery for enhanced gallery features
 
 ## Usage
 
@@ -114,11 +122,3 @@ For issues, feature requests, or contributions, please open an issue on the GitH
 ## Credits
 
 Developed by Antonin Puleo
-
-## Download
-
-Download ready-to-install ZIPs from the GitHub Releases page:
-
-- https://github.com/antoninp/ap-query-loop/releases
-
-In WordPress, go to Plugins > Add New > Upload Plugin and upload `ap-query-loop.zip`.

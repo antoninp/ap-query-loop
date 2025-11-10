@@ -3,7 +3,7 @@
  * Plugin Name:       AP Query Loop Gallery
  * Description:       Display a list of posts from a selected post type as a gallery using featured images (Meow Gallery compatible).
  * Version:           0.1.1
- * Author:            Antonin P.
+ * Author:            Antonin Puleo
  * Text Domain:       ap-query-loop
  * Requires at least: 6.5
  * Requires PHP:      7.4
