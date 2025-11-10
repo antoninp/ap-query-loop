@@ -5,12 +5,18 @@ on:
     tags:
       - 'v*'
 
+# Ensure GITHUB_TOKEN has the rights to create releases
+permissions:
+  contents: write
+
 jobs:
   build-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js
         uses: actions/setup-node@v4
@@ -35,6 +41,7 @@ jobs:
             --exclude='PLAN.md' \
             --exclude='package.json' \
             --exclude='package-lock.json' \
+            --exclude='dist' \
             ./ dist/ap-query-loop/
 
       - name: Create zip archive
