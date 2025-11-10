@@ -113,4 +113,12 @@ For issues, feature requests, or contributions, please open an issue on the GitH
 
 ## Credits
 
-Developed by Antonin P.
+Developed by Antonin Puleo
+
+## Download
+
+Download ready-to-install ZIPs from the GitHub Releases page:
+
+- https://github.com/antoninp/ap-query-loop/releases
+
+In WordPress, go to Plugins > Add New > Upload Plugin and upload `ap-query-loop.zip`.

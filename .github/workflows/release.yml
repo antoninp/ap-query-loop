@@ -1,0 +1,50 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Prepare distribution folder
+        run: |
+          mkdir dist
+          rsync -av \
+            --exclude='node_modules' \
+            --exclude='src' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='PLAN.md' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            ./ dist/ap-query-loop/
+
+      - name: Create zip archive
+        run: |
+          cd dist
+          zip -r ap-query-loop.zip ap-query-loop
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ap-query-loop.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

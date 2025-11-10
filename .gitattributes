@@ -1,0 +1,8 @@
+# Exclude dev files from source archives and release packaging
+/src export-ignore
+/node_modules export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
+/.gitignore export-ignore
+/.github export-ignore
+/PLAN.md export-ignore
