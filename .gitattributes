@@ -6,3 +6,5 @@
 /.gitignore export-ignore
 /.github export-ignore
 /PLAN.md export-ignore
+/sync-version.js export-ignore
+/version.json export-ignore

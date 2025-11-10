@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Sync version from version.json
+        run: npm run sync-version
+
       - name: Build assets
         run: npm run build
 
@@ -42,6 +45,8 @@ jobs:
             --exclude='package.json' \
             --exclude='package-lock.json' \
             --exclude='dist' \
+            --exclude='sync-version.js' \
+            --exclude='version.json' \
             ./ dist/ap-query-loop/
 
       - name: Create zip archive

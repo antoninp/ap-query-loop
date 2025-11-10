@@ -1,6 +1,6 @@
 {
   "name": "ap-query-loop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AP Query Loop Gallery block for WordPress (Meow Gallery compatible)",
   "private": true,
   "license": "GPL-2.0-or-later",
@@ -8,7 +8,8 @@
     "build": "wp-scripts build",
     "start": "wp-scripts start",
     "lint:js": "wp-scripts lint-js",
-    "format": "wp-scripts format"
+    "format": "wp-scripts format",
+    "sync-version": "node sync-version.js"
   },
   "devDependencies": {
     "@babel/runtime": "^7.28.4",
