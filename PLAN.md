@@ -15,19 +15,17 @@ Create a custom Gutenberg block that behaves like the core “Query Loop” bloc
 - Type: Dynamic (server-rendered) block with editor preview
 
 ## Functional Requirements
-1. Post Type Selection
-   - UI control (dropdown) to choose any public post type.
+1. Context-Only Operation
+   - Block exposes no inspector UI or attributes; must reside under `core/query`.
 2. Query Behavior
-   - Retain core Query Loop features: pagination (if enabled), ordering, filters (taxonomy, author, date) as supported by core components.
-   - Respect `perPage`.
+   - Reuse all core Query Loop features (pagination, ordering, taxonomy filters) via context—no duplication.
 3. Rendering
-   - Frontend: Output a Meow Gallery of featured images for posts in the query (Meow defaults, no custom gallery controls).
-   - Editor: Preview a grid of featured images approximating the gallery (no custom settings).
+   - Frontend & editor: Server-side render of gallery based solely on current query context.
 4. Featured Image Handling
-   - Include only posts that have a featured image (skip those without).
+   - Include only posts with featured images; skip others.
 5. Fallbacks
-   - No posts: show a translatable “No posts found.” message.
-   - Fallback cascade when Meow Gallery not usable: (1) Modern core Gallery block HTML (nested `wp-block-image` figures) (2) Legacy `[gallery ids="..."]` shortcode as tertiary compatibility layer for classic themes.
+   - No posts or no images: translatable “No posts found.” message.
+   - Cascade: Meow Gallery shortcode → modern core gallery HTML → legacy shortcode.
 6. Internationalization
    - Wrap all user-facing strings in translation functions; load text domain.
 7. Security & Data Integrity
@@ -43,17 +41,13 @@ Create a custom Gutenberg block that behaves like the core “Query Loop” bloc
 - Advanced image size manipulation UI.
 - Exhaustive testing of gallery style variants.
 
-## Block Attributes (initial)
-- `postType: string`
-- `queryProps: object` (similar shape to core Query Loop; e.g., `perPage`, `order`, `orderBy`, optional `taxQuery`)
-- `enablePagination: boolean`
-- Reserved (not implemented now): `imageSize`, `includePlaceholders`.
+## Block Attributes
+None (context-only). Potential future optional: `forceLegacy`, `includePlaceholders` (deferred).
 
 ## Editor UX Outline
-- Sidebar Panel: Post Type selector.
-- Reuse core Query Loop inspector panels where practical (or provide minimal equivalents).
-- Preview: Uses actual server-side rendering of the Meow Gallery shortcode when Meow Gallery is active, via the `<ServerSideRender />` component (falls back to REST-powered thumbnail grid if shortcode unavailable or Meow inactive).
-- Loading: Spinner when query or post type changes or server render in flight.
+- No inspector controls; relies entirely on parent Query Loop configuration.
+- Preview: `<ServerSideRender />` returns gallery HTML for current query context.
+- Spinner automatically shown by component on request.
 
 ## Rendering Strategy
 - Architecture: Use the core `Query Loop` (`core/query`) block and provide a single child dynamic block `ap/query-loop-gallery` that consumes its query context (`query`, `queryId`). This avoids re‑implementing pagination, no‑results, and inner block ecosystem.
@@ -74,52 +68,27 @@ Create a custom Gutenberg block that behaves like the core “Query Loop” bloc
 - Large result sets: respect `perPage`; if pagination enabled, output pagination links via `paginate_links()`.
 - Private post types: exclude from selector.
 
-## Implementation Plan
-1. Boilerplate
-   - Add plugin header in `ap-query-loop.php` (if not present).
-   - Load text domain early (`init`).
-   - Register dynamic block on `init`.
-2. Block Metadata
-   - Update/confirm `block.json` for `ap/query-loop-gallery`: name, category, icon, attributes (`postType`, `queryProps`, `enablePagination`, optional `sizeSlug`, optional `forceLegacy`), `usesContext` (`query`, `queryId`), `editorScript`, `renderCallback`.
-3. Build Setup
-   - Ensure `package.json` uses `@wordpress/scripts`.
-   - Create/extend `src/index.js` (registration & variation), `src/edit.js` (inspector + preview), `src/style.scss` & optional `src/editor.scss`.
-4. Editor Components
-   - Post type selector: fetch `/wp/v2/types` filtering public types.
-   - Minimal query controls: `perPage`, `order`, `orderBy` (extendable later).
-   - Preview: `<ServerSideRender>`; implement debounce; cap preview `perPage` at 12.
-5. Server Render (Dynamic Child Block)
-   - Derive query args via `build_query_vars_from_query_block()` using context and page key.
-   - Collect post IDs with featured images; build attachment ID array.
-   - Fallback cascade: Meow → core gallery HTML → `[gallery ids="..."]` shortcode.
-   - Escape/sanitize output; provide i18n fallback message when empty.
-6. Pagination
-   - Maintain compatibility with core pagination blocks; rely on `queryId` page param naming; do not output custom pagination if core pagination siblings exist.
-7. Enqueues & Assets
-   - Conditionally enqueue front-end styles only if block present (e.g., detect via `has_block`).
-   - Editor assets enqueued via `block.json` handles.
-8. I18n & Security
-   - Sanitize attributes defensively (types, arrays, ints).
-   - Use escaping for URLs, HTML, attributes; avoid raw image HTML unless generated via `wp_get_attachment_image()`.
-9. Documentation
-   - Update `README.md` with fallback cascade details and Meow detection methods.
-   - Note soft dependency and degradation behavior.
-10. Block Variation
-   - Provide a `core/query` variation that inserts `[ap/query-loop-gallery, core/query-no-results, core/query-pagination]` pre-composed layout.
-11. Manual Acceptance Review
-   - Scenarios: Meow active/inactive; classic vs block theme; empty query; pagination; large perPage limit; no PHP notices with `WP_DEBUG`.
-12. Future (Deferred)
-   - Transient caching; extended query filters; gallery layout controls; placeholders.
+## Implementation Plan (Revised Context-Only)
+1. Boilerplate: Maintain plugin header, text domain load, block registration with render callback.
+2. Block Metadata: Confirm `usesContext` & `parent`; remove attributes.
+3. Editor Script: Minimal registration + variation; no inspector.
+4. Server Render: Use `build_query_vars_from_query_block()`; filter posts by featured image; perform fallback cascade.
+5. Pagination: Handled by core siblings; do not emit pagination markup.
+6. Assets: Conditional frontend styles; editor script via metadata.
+7. Security/I18n: Escape output; translate messages.
+8. Documentation: Update README & changelog to reflect context-only approach.
+9. Variation: Pre-composed layout (gallery + no-results + pagination) remains.
+10. Acceptance Review: Test Meow active/inactive, empty results, pagination via core, classic vs block theme, translation.
+11. Future: Optional attributes (`forceLegacy`, `includePlaceholders`), caching, extended filters.
 
 ## Acceptance Criteria
-- Block is discoverable in inserter (category chosen) and variation available for quick insertion.
-- Selecting a post type updates editor preview with featured images (limited preview count when large).
-- Frontend renders Meow gallery when active; otherwise modern core gallery HTML; otherwise legacy shortcode markup if forced/fallback.
-- Pagination integration intact with core pagination blocks (page changes update gallery results).
+- Block discoverable only under Query Loop (or via variation) with no custom controls.
+- Gallery reflects current Query Loop configuration automatically (post type, filters, ordering, pagination).
+- Fallback cascade works (Meow → core gallery HTML → legacy shortcode) across themes.
 - No PHP notices/warnings under `WP_DEBUG`.
-- All user-facing strings translatable; attributes sanitized; output escaped.
-- Empty or no-image results show translatable fallback message.
-- Fallback cascade functions correctly across classic and block themes.
+- Empty or no-image results trigger translatable message.
+- Pagination links from core pagination blocks update gallery images accordingly.
+- Works in both block and classic themes (styles degrade gracefully).
 
 ## Assumptions
 - Meow Gallery either provides a shortcode or auto-enhances standard gallery markup.

@@ -8,32 +8,8 @@
   "textdomain": "ap-query-loop",
   "parent": ["core/query"],
   "usesContext": ["query", "queryId"],
-  "supports": {
-    "html": false
-  },
-  "attributes": {
-    "postType": {
-      "type": "string",
-      "default": "post"
-    },
-    "perPage": {
-      "type": "number",
-      "default": 12
-    },
-    "order": {
-      "type": "string",
-      "enum": ["asc", "desc", "ASC", "DESC"],
-      "default": "DESC"
-    },
-    "orderBy": {
-      "type": "string",
-      "default": "date"
-    },
-    "enablePagination": {
-      "type": "boolean",
-      "default": false
-    }
-  },
+  "supports": { "html": false },
+  "attributes": {},
   "editorScript": "file:./build/index.js",
   "style": "file:./build/style-index.css"
 }

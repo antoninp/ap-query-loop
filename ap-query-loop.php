@@ -86,41 +86,18 @@ add_action( 'init', function() {
  * @return string HTML
  */
 function ap_query_loop_render_block( $attributes, $content = '', $block = null ) {
-	$enable_pagination = ! empty( $attributes['enablePagination'] );
+	// Require Query Loop context; otherwise instruct user to nest block properly.
+	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
+	if ( ! $use_context || ! function_exists( 'build_query_vars_from_query_block' ) ) {
+		return '<div class="wp-block-ap-query-loop-gallery ap-query-loop-gallery"><em>' . esc_html__( 'Place this block inside a Query Loop block.', 'ap-query-loop' ) . '</em></div>';
+	}
 
-	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context ) && ! empty( $block->context['query'] );
-
-	// Build query args either from core/query context (preferred) or fallback to local attributes
-	if ( $use_context && function_exists( 'build_query_vars_from_query_block' ) ) {
-		$query_id  = isset( $block->context['queryId'] ) ? intval( $block->context['queryId'] ) : 0;
-		$page_key  = $query_id ? 'query-' . $query_id . '-page' : 'query-page';
-		$page      = isset( $_GET[ $page_key ] ) ? max( 1, intval( $_GET[ $page_key ] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$query_args = build_query_vars_from_query_block( $block, $page );
-		// Ensure we don't break pagination count if core handles it; allow found rows when enhanced pagination disabled
-		if ( ! isset( $query_args['ignore_sticky_posts'] ) ) {
-			$query_args['ignore_sticky_posts'] = true;
-		}
-	} else {
-		// Legacy/standalone usage (outside core/query): derive from attributes
-		$post_type = isset( $attributes['postType'] ) ? sanitize_key( $attributes['postType'] ) : 'post';
-		$per_page  = isset( $attributes['perPage'] ) ? max( 1, intval( $attributes['perPage'] ) ) : 12;
-		$order     = isset( $attributes['order'] ) ? ( strtoupper( $attributes['order'] ) === 'ASC' ? 'ASC' : 'DESC' ) : 'DESC';
-		$orderby   = isset( $attributes['orderBy'] ) ? sanitize_key( $attributes['orderBy'] ) : 'date';
-
-		$paged = 1;
-		if ( $enable_pagination ) {
-			$paged = max( 1, intval( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
-		}
-
-		$query_args = [
-			'post_type'           => $post_type,
-			'posts_per_page'      => $per_page,
-			'orderby'             => $orderby,
-			'order'               => $order,
-			'ignore_sticky_posts' => true,
-			'paged'               => $paged,
-			'no_found_rows'       => ! $enable_pagination,
-		];
+	$query_id  = isset( $block->context['queryId'] ) ? intval( $block->context['queryId'] ) : 0;
+	$page_key  = $query_id ? 'query-' . $query_id . '-page' : 'query-page';
+	$page      = isset( $_GET[ $page_key ] ) ? max( 1, intval( $_GET[ $page_key ] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$query_args = build_query_vars_from_query_block( $block, $page );
+	if ( ! isset( $query_args['ignore_sticky_posts'] ) ) {
+		$query_args['ignore_sticky_posts'] = true;
 	}
 
 	$q = new WP_Query( $query_args );
@@ -181,21 +158,7 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 		}
 	}
 
-	// Append pagination only for legacy standalone usage; inside core/query, pagination is handled by sibling blocks
-	if ( ! $use_context && $enable_pagination ) {
-		$big = 999999999; // need an unlikely integer
-		$current = isset( $paged ) ? max( 1, (int) $paged ) : 1;
-		$pagination = paginate_links( [
-			'base'      => str_replace( $big, '%#%', esc_url( get_pagenum_link( $big ) ) ),
-			'format'    => '?paged=%#%',
-			'current'   => $current,
-			'total'     => (int) $q->max_num_pages,
-			'type'      => 'list',
-		] );
-		if ( $pagination ) {
-			$html .= '<nav class="navigation pagination ap-query-loop-pagination" role="navigation">' . $pagination . '</nav>';
-		}
-	}
+	// No standalone pagination; handled by core/query siblings.
 
 	// Wrap for block context styling
 	return '<div class="wp-block-ap-query-loop-gallery ap-query-loop-gallery">' . $html . '</div>';

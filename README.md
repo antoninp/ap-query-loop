@@ -8,14 +8,12 @@ This block extends the functionality of WordPress's core Query Loop by rendering
 
 ## Features
 
-- **Post Type Selection**: Choose any public post type via dropdown.
-- **Query Controls**: Configure items per page, ordering, and pagination.
-- **Query Context Integration**: Consumes `core/query` context for consistent pagination & filtering when nested.
-- **Server-Side Rendering**: Preview actual gallery output in the editor.
+- **Context-Only**: No settings UI; relies entirely on parent `core/query` block configuration.
+- **Server-Side Rendering**: Preview actual gallery output directly in the editor.
 - **Meow Gallery Integration**: Automatically uses Meow Gallery shortcode when available.
 - **Graceful Fallback Cascade**: Meow Gallery → modern core gallery HTML → legacy `[gallery]` shortcode.
 - **Block Variation**: One-click Query Loop variation includes gallery + no-results + pagination.
-- **Performance**: Efficient queries, only includes posts with featured images.
+- **Performance**: Efficient query; filters to posts with featured images only.
 
 ## Requirements
 
@@ -40,15 +38,11 @@ In WordPress, go to Plugins > Add New > Upload Plugin and upload `ap-query-loop.
 
 ## Usage
 
-1. Add the "AP Query Loop Gallery" block to any post or page
-2. In the block settings sidebar:
-   - Select a post type from the dropdown
-   - Adjust items per page (1-24)
-   - Configure ordering (date, title, menu_order, rand)
-   - Set order direction (ASC or DESC)
-   - Enable pagination if needed
-3. The block preview will show the actual gallery output
-4. Publish and view on the frontend
+1. Insert a **Query Loop** block (or use the provided variation "Query: Gallery (AP)").
+2. Configure the Query Loop (post type, filters, ordering, pagination) using core controls.
+3. Ensure the inner blocks include `AP Query Loop Gallery` (variation does this automatically).
+4. Preview updates immediately via server render.
+5. Publish and view the gallery on the frontend.
 
 ## Development
 
@@ -87,15 +81,15 @@ ap-query-loop/
 
 ## How It Works
 
-1. **Editor**: Uses `ServerSideRender` to display actual gallery output while editing.
-2. **Query**: Derives query vars from `core/query` context when placed inside a Query Loop; falls back to local attributes if used standalone.
-3. **Filter**: Only includes posts with featured images.
-4. **Render Fallback Cascade**:
-   - Meow Gallery active: render Meow Gallery shortcode for the featured image IDs.
-   - Else: output modern core Gallery equivalent HTML (`wp-block-gallery` with nested `wp-block-image` figures).
-   - Else (edge legacy fallback): output `[gallery ids="..."]` shortcode.
-5. **Pagination**: When inside `core/query`, pagination is handled by sibling core pagination blocks; standalone usage can enable internal pagination.
-6. **Variation**: Ships a `core/query` variation inserting the gallery block plus no-results and pagination blocks for rapid composition.
+1. **Context Consumption**: The block declares `usesContext` for `query` and `queryId` and must reside under `core/query`.
+2. **Single Query Pass**: Server render reuses the query vars derived by WordPress core via `build_query_vars_from_query_block()`.
+3. **Featured Image Filter**: Collects only posts with a valid featured image; empty set triggers fallback message.
+4. **Rendering Cascade**:
+   - Meow Gallery shortcode if available.
+   - Modern gallery HTML (`wp-block-gallery` + nested `wp-block-image`).
+   - Legacy `[gallery ids="..."]` shortcode as tertiary fallback.
+5. **Pagination**: Delegated entirely to sibling core pagination blocks; this block does not generate pagination markup itself.
+6. **Variation**: Provided variation pre-composes gallery + no-results + pagination for quick insertion.
 
 ## Filters & Hooks
 
@@ -106,12 +100,13 @@ Currently no custom filters or hooks exposed. Future versions may add:
 
 ## Changelog
 
-### 0.1.2 - Context & Fallback Update
+### 0.1.2 - Context-Only Refactor
 - Added `usesContext` and `parent` to restrict block under `core/query`.
 - Implemented context-aware query building (`build_query_vars_from_query_block`).
 - Added fallback cascade: Meow → core gallery HTML → legacy shortcode.
 - Registered `core/query` variation (gallery + no-results + pagination).
 - Updated README and PLAN; refined pagination behavior inside Query Loop.
+ - Removed all block attributes & inspector controls (context-only design).
 
 ### 0.1.1 - Build Update
 - Add version sync system.
