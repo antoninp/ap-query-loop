@@ -9,7 +9,8 @@
     "start": "wp-scripts start",
     "lint:js": "wp-scripts lint-js",
     "format": "wp-scripts format",
-    "sync-version": "node sync-version.js"
+    "sync-version": "node sync-version.js",
+    "release": "node scripts/update-version.js"
   },
   "devDependencies": {
     "@babel/runtime": "^7.28.4",

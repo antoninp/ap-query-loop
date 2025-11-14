@@ -124,6 +124,27 @@ Currently no custom filters or hooks exposed. Future versions may add:
 
 ## License
 
+## Release Workflow
+
+Automated versioning & changelog:
+
+1. Make code changes; commit normally.
+2. Edit `version.json` with new `version`, `summary`, and `changes` array (optionally add `date`).
+3. Run `npm run release` to update versions and prepend the changelog entry in `README.md`.
+4. Push commits and tag: `git push && git push --tags`.
+5. GitHub Actions (release workflow) builds package from tag.
+
+Flags:
+
+- `--tag`: Create annotated git tag `vX.Y.Z` after commit.
+- `--build`: Run `npm run build` before committing/tagging.
+- `--stable`: Also update `readme.txt` "Stable tag:" if present (for wp.org).
+- `--auto-summary`: Generate summary from Conventional Commits since last tag.
+- `--auto-changes`: Populate `changes` from Conventional Commits subjects since last tag.
+- `--dry-run`: Perform all steps without writing files, commits, or tags.
+
+Alternative tools: consider `standard-version`, `changesets`, or `release-please` if you later adopt Conventional Commits or want automated semver inference. Current custom script keeps WordPress-specific headers synchronized.
+
 GPL-2.0-or-later
 
 ## Testing Checklist
