@@ -100,6 +100,9 @@ Currently no custom filters or hooks exposed. Future versions may add:
 
 ## Changelog
 
+### 0.1.4 - Release scripts
+- Added building scripts to automate release process
+
 ### 0.1.3 - Context-only refactor
 - Removed all block attributes & inspector controls (context-only design).
 
