@@ -100,13 +100,15 @@ Currently no custom filters or hooks exposed. Future versions may add:
 
 ## Changelog
 
-### 0.1.2 - Context-Only Refactor
+### 0.1.3 - Context-only refactor
+- Removed all block attributes & inspector controls (context-only design).
+
+### 0.1.2 - Context & Fallback Update
 - Added `usesContext` and `parent` to restrict block under `core/query`.
 - Implemented context-aware query building (`build_query_vars_from_query_block`).
 - Added fallback cascade: Meow → core gallery HTML → legacy shortcode.
 - Registered `core/query` variation (gallery + no-results + pagination).
 - Updated README and PLAN; refined pagination behavior inside Query Loop.
- - Removed all block attributes & inspector controls (context-only design).
 
 ### 0.1.1 - Build Update
 - Add version sync system.
