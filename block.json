@@ -6,6 +6,8 @@
   "category": "theme",
   "icon": "images-alt2",
   "textdomain": "ap-query-loop",
+  "parent": ["core/query"],
+  "usesContext": ["query", "queryId"],
   "supports": {
     "html": false
   },

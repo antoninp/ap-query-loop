@@ -30,6 +30,8 @@ if ( ! function_exists( 'get_post_thumbnail_id' ) ) { function get_post_thumbnai
 if ( ! function_exists( 'get_the_ID' ) ) { function get_the_ID(){ return 0; } }
 if ( ! function_exists( 'wp_reset_postdata' ) ) { function wp_reset_postdata(){} }
 if ( ! function_exists( 'wp_get_attachment_image' ) ) { function wp_get_attachment_image( $id, $size = 'large', $icon = false, $attr = [] ){ return ''; } }
+if ( ! class_exists( 'WP_Query' ) ) { class WP_Query { public $max_num_pages = 1; public function __construct( $args = [] ) {} public function have_posts() { return false; } public function the_post() {} } }
+if ( ! class_exists( 'WP_Block' ) ) { class WP_Block { public $context = []; } }
 
 // Load text domain (if languages/ present later)
 add_action( 'init', function() {
@@ -73,7 +75,9 @@ add_action( 'init', function() {
         'style'           => $style_handle,
         'render_callback' => 'ap_query_loop_render_block',
     ] );
-} );/**
+} );
+
+/**
  * Server-side render callback for the block.
  *
  * @param array $attributes Block attributes.
@@ -82,27 +86,42 @@ add_action( 'init', function() {
  * @return string HTML
  */
 function ap_query_loop_render_block( $attributes, $content = '', $block = null ) {
-	$post_type        = isset( $attributes['postType'] ) ? sanitize_key( $attributes['postType'] ) : 'post';
-	$per_page         = isset( $attributes['perPage'] ) ? max( 1, intval( $attributes['perPage'] ) ) : 12;
-	$order            = isset( $attributes['order'] ) ? ( strtoupper( $attributes['order'] ) === 'ASC' ? 'ASC' : 'DESC' ) : 'DESC';
-	$orderby          = isset( $attributes['orderBy'] ) ? sanitize_key( $attributes['orderBy'] ) : 'date';
-	$enable_pagination= ! empty( $attributes['enablePagination'] );
+	$enable_pagination = ! empty( $attributes['enablePagination'] );
 
-	// Determine paged for pagination if enabled
-	$paged = 1;
-	if ( $enable_pagination ) {
-		$paged = max( 1, intval( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
+	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context ) && ! empty( $block->context['query'] );
+
+	// Build query args either from core/query context (preferred) or fallback to local attributes
+	if ( $use_context && function_exists( 'build_query_vars_from_query_block' ) ) {
+		$query_id  = isset( $block->context['queryId'] ) ? intval( $block->context['queryId'] ) : 0;
+		$page_key  = $query_id ? 'query-' . $query_id . '-page' : 'query-page';
+		$page      = isset( $_GET[ $page_key ] ) ? max( 1, intval( $_GET[ $page_key ] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$query_args = build_query_vars_from_query_block( $block, $page );
+		// Ensure we don't break pagination count if core handles it; allow found rows when enhanced pagination disabled
+		if ( ! isset( $query_args['ignore_sticky_posts'] ) ) {
+			$query_args['ignore_sticky_posts'] = true;
+		}
+	} else {
+		// Legacy/standalone usage (outside core/query): derive from attributes
+		$post_type = isset( $attributes['postType'] ) ? sanitize_key( $attributes['postType'] ) : 'post';
+		$per_page  = isset( $attributes['perPage'] ) ? max( 1, intval( $attributes['perPage'] ) ) : 12;
+		$order     = isset( $attributes['order'] ) ? ( strtoupper( $attributes['order'] ) === 'ASC' ? 'ASC' : 'DESC' ) : 'DESC';
+		$orderby   = isset( $attributes['orderBy'] ) ? sanitize_key( $attributes['orderBy'] ) : 'date';
+
+		$paged = 1;
+		if ( $enable_pagination ) {
+			$paged = max( 1, intval( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
+		}
+
+		$query_args = [
+			'post_type'           => $post_type,
+			'posts_per_page'      => $per_page,
+			'orderby'             => $orderby,
+			'order'               => $order,
+			'ignore_sticky_posts' => true,
+			'paged'               => $paged,
+			'no_found_rows'       => ! $enable_pagination,
+		];
 	}
-
-	$query_args = [
-		'post_type'           => $post_type,
-		'posts_per_page'      => $per_page,
-		'orderby'             => $orderby,
-		'order'               => $order,
-		'ignore_sticky_posts' => true,
-		'paged'               => $paged,
-		'no_found_rows'       => ! $enable_pagination,
-	];
 
 	$q = new WP_Query( $query_args );
 
@@ -140,31 +159,36 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 		}
 	}
 
-	// Fallback to standard gallery if Meow not present (or shortcode returned empty)
+	// Fallback chain if Meow not present (or shortcode returned empty)
 	if ( empty( $html ) ) {
-		// Standard gallery shortcode usually accepts attachment IDs as ids
-		$html = gallery_shortcode( [ 'ids' => $ids_csv, 'size' => 'large' ] );
-
-		if ( empty( $html ) ) {
-			// Final graceful fallback: simple grid of images
-			$html = '<div class="ap-query-loop-basic-gallery">';
-			foreach ( $image_ids as $id ) {
-				$img = wp_get_attachment_image( $id, 'large', false, [ 'loading' => 'lazy' ] );
-				if ( $img ) {
-					$html .= '<div class="ap-query-loop-item">' . $img . '</div>';
-				}
+		// Preferred fallback: modern core gallery equivalent HTML with nested wp-block-image figures
+		$gallery  = '<figure class="wp-block-gallery has-nested-images is-cropped">';
+		foreach ( $image_ids as $id ) {
+			$img = wp_get_attachment_image( $id, 'large', false, [ 'loading' => 'lazy', 'class' => 'wp-image-' . intval( $id ) ] );
+			if ( $img ) {
+				$gallery .= '<figure class="wp-block-image">' . $img . '</figure>';
 			}
-			$html .= '</div>';
+		}
+		$gallery .= '</figure>';
+		$html = $gallery;
+
+		// Last fallback: legacy gallery shortcode if something prevented HTML building
+		if ( empty( $html ) ) {
+			$shortcode_html = gallery_shortcode( [ 'ids' => $ids_csv, 'size' => 'large', 'link' => 'none' ] );
+			if ( ! empty( $shortcode_html ) ) {
+				$html = $shortcode_html;
+			}
 		}
 	}
 
-	// Append pagination if enabled
-	if ( $enable_pagination ) {
+	// Append pagination only for legacy standalone usage; inside core/query, pagination is handled by sibling blocks
+	if ( ! $use_context && $enable_pagination ) {
 		$big = 999999999; // need an unlikely integer
+		$current = isset( $paged ) ? max( 1, (int) $paged ) : 1;
 		$pagination = paginate_links( [
 			'base'      => str_replace( $big, '%#%', esc_url( get_pagenum_link( $big ) ) ),
 			'format'    => '?paged=%#%',
-			'current'   => max( 1, $paged ),
+			'current'   => $current,
 			'total'     => (int) $q->max_num_pages,
 			'type'      => 'list',
 		] );

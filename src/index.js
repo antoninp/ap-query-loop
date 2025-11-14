@@ -1,4 +1,4 @@
-import { registerBlockType } from '@wordpress/blocks';
+import { registerBlockType, registerBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextControl, RangeControl, ToggleControl, SelectControl } from '@wordpress/components';
@@ -89,4 +89,18 @@ registerBlockType('ap/query-loop-gallery', {
 		);
 	},
 	save: () => null
+});
+
+// Provide a convenient Query variation that composes our gallery with no-results and pagination
+registerBlockVariation('core/query', {
+	name: 'ap-query-gallery-variation',
+	title: __('Query: Gallery (AP)', 'ap-query-loop'),
+	description: __('Render the current query as a gallery of featured images, with no-results and pagination blocks.', 'ap-query-loop'),
+	icon: 'images-alt2',
+	scope: [ 'inserter' ],
+	innerBlocks: [
+		[ 'ap/query-loop-gallery' ],
+		[ 'core/query-no-results' ],
+		[ 'core/query-pagination' ]
+	]
 });
