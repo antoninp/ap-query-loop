@@ -106,12 +106,16 @@ Currently no custom filters or hooks exposed. Future versions may add:
 
 ## Changelog
 
-### 0.1.1 - Context & Fallback Update
+### 0.1.2 - Context & Fallback Update
 - Added `usesContext` and `parent` to restrict block under `core/query`.
 - Implemented context-aware query building (`build_query_vars_from_query_block`).
 - Added fallback cascade: Meow → core gallery HTML → legacy shortcode.
 - Registered `core/query` variation (gallery + no-results + pagination).
 - Updated README and PLAN; refined pagination behavior inside Query Loop.
+
+### 0.1.1 - Build Update
+- Add version sync system.
+- Fix release packaging.
 
 ### 0.1.0 - Initial Release
 - Basic block functionality.
