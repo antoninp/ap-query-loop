@@ -100,6 +100,9 @@ Currently no custom filters or hooks exposed. Future versions may add:
 
 ## Changelog
 
+### 0.1.5 - Fix query
+- Fixed issue with query parameters not being applied correctly to the gallery.
+
 ### 0.1.4 - Release scripts
 - Added building scripts to automate release process
 

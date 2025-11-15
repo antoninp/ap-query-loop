@@ -1,7 +1,7 @@
 {
-  "version": "0.1.4",
-  "summary": "Release scripts",
+  "version": "0.1.5",
+  "summary": "Fix query",
   "changes": [
-    "Added building scripts to automate release process"
+    "Fixed issue with query parameters not being applied correctly to the gallery."
   ]
 }
