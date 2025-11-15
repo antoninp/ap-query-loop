@@ -30,7 +30,7 @@ if ( ! function_exists( 'get_post_thumbnail_id' ) ) { function get_post_thumbnai
 if ( ! function_exists( 'get_the_ID' ) ) { function get_the_ID(){ return 0; } }
 if ( ! function_exists( 'wp_reset_postdata' ) ) { function wp_reset_postdata(){} }
 if ( ! function_exists( 'wp_get_attachment_image' ) ) { function wp_get_attachment_image( $id, $size = 'large', $icon = false, $attr = [] ){ return ''; } }
-if ( ! class_exists( 'WP_Query' ) ) { class WP_Query { public $max_num_pages = 1; public function __construct( $args = [] ) {} public function have_posts() { return false; } public function the_post() {} } }
+if ( ! class_exists( 'WP_Query' ) ) { class WP_Query { public $max_num_pages = 1; public $posts = []; public function __construct( $args = [] ) {} public function have_posts() { return false; } public function the_post() {} } }
 if ( ! class_exists( 'WP_Block' ) ) { class WP_Block { public $context = []; } }
 
 // Load text domain (if languages/ present later)
@@ -82,39 +82,36 @@ add_action( 'init', function() {
  *
  * @param array $attributes Block attributes.
  * @param string $content   Block inner content (unused).
- * @param WP_Block $block   Full block instance (unused).
+ * @param WP_Block $block   Full block instance.
  * @return string HTML
  */
 function ap_query_loop_render_block( $attributes, $content = '', $block = null ) {
-	// Require Query Loop context; otherwise instruct user to nest block properly.
+	// Must be inside a Query Loop block providing 'query' context.
 	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
-	if ( ! $use_context || ! function_exists( 'build_query_vars_from_query_block' ) ) {
+	if ( ! $use_context ) {
 		return '<div class="wp-block-ap-query-loop-gallery ap-query-loop-gallery"><em>' . esc_html__( 'Place this block inside a Query Loop block.', 'ap-query-loop' ) . '</em></div>';
 	}
 
-	$query_id  = isset( $block->context['queryId'] ) ? intval( $block->context['queryId'] ) : 0;
-	$page_key  = $query_id ? 'query-' . $query_id . '-page' : 'query-page';
-	$page      = isset( $_GET[ $page_key ] ) ? max( 1, intval( $_GET[ $page_key ] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$query_args = build_query_vars_from_query_block( $block, $page );
-	if ( ! isset( $query_args['ignore_sticky_posts'] ) ) {
-		$query_args['ignore_sticky_posts'] = true;
-	}
-
-	$q = new WP_Query( $query_args );
-
-	if ( ! $q->have_posts() ) {
+	// We DO NOT create a new query. We rely entirely on the query already
+	// executed by the parent core/query block. At this point in rendering,
+	// the global $wp_query should represent that query (inherited or custom).
+	global $wp_query;
+	if ( ! ( $wp_query instanceof WP_Query ) || empty( $wp_query->posts ) ) {
 		return '<div class="ap-query-loop-empty">' . esc_html__( 'No posts found.', 'ap-query-loop' ) . '</div>';
 	}
 
+	// Collect featured image IDs from the existing posts without altering pagination.
 	$image_ids = [];
-	while ( $q->have_posts() ) {
-		$q->the_post();
-		$thumb_id = get_post_thumbnail_id( get_the_ID() );
+	foreach ( $wp_query->posts as $post ) {
+		$post_id  = isset( $post->ID ) ? (int) $post->ID : 0;
+		if ( ! $post_id ) {
+			continue;
+		}
+		$thumb_id = get_post_thumbnail_id( $post_id );
 		if ( $thumb_id ) {
 			$image_ids[] = (int) $thumb_id;
 		}
 	}
-	wp_reset_postdata();
 
 	if ( empty( $image_ids ) ) {
 		return '<div class="ap-query-loop-empty">' . esc_html__( 'No posts found.', 'ap-query-loop' ) . '</div>';
@@ -122,13 +119,12 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 
 	$ids_csv = implode( ',', array_map( 'intval', $image_ids ) );
 
-	// Prefer Meow Gallery shortcode if available. We detect by checking shortcode list.
+	// Prefer Meow Gallery shortcode if available.
 	global $shortcode_tags;
 	$has_meow = is_array( $shortcode_tags ) && ( isset( $shortcode_tags['meow-gallery'] ) || isset( $shortcode_tags['meow_gallery'] ) );
 
 	$html = '';
 	if ( $has_meow ) {
-		// Try meow-gallery first, then meow_gallery.
 		if ( isset( $shortcode_tags['meow-gallery'] ) ) {
 			$html = do_shortcode( '[meow-gallery ids="' . esc_attr( $ids_csv ) . '"]' );
 		} elseif ( isset( $shortcode_tags['meow_gallery'] ) ) {
@@ -136,9 +132,8 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 		}
 	}
 
-	// Fallback chain if Meow not present (or shortcode returned empty)
+	// Fallback chain if Meow not present (or shortcode returned empty).
 	if ( empty( $html ) ) {
-		// Preferred fallback: modern core gallery equivalent HTML with nested wp-block-image figures
 		$gallery  = '<figure class="wp-block-gallery has-nested-images is-cropped">';
 		foreach ( $image_ids as $id ) {
 			$img = wp_get_attachment_image( $id, 'large', false, [ 'loading' => 'lazy', 'class' => 'wp-image-' . intval( $id ) ] );
@@ -149,7 +144,6 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 		$gallery .= '</figure>';
 		$html = $gallery;
 
-		// Last fallback: legacy gallery shortcode if something prevented HTML building
 		if ( empty( $html ) ) {
 			$shortcode_html = gallery_shortcode( [ 'ids' => $ids_csv, 'size' => 'large', 'link' => 'none' ] );
 			if ( ! empty( $shortcode_html ) ) {
@@ -158,9 +152,6 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 		}
 	}
 
-	// No standalone pagination; handled by core/query siblings.
-
-	// Wrap for block context styling
 	return '<div class="wp-block-ap-query-loop-gallery ap-query-loop-gallery">' . $html . '</div>';
 }
 
