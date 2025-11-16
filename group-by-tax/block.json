@@ -1,0 +1,20 @@
+{
+  "apiVersion": 3,
+  "name": "ap/group-by-tax",
+  "title": "AP Group by Taxonomy",
+  "description": "Group the current Query Loop posts by a taxonomy and render a gallery per term.",
+  "category": "theme",
+  "icon": "filter",
+  "textdomain": "ap-query-loop",
+  "parent": ["core/query"],
+  "usesContext": ["query", "queryId"],
+  "providesContext": {
+    "ap/groupTax": "taxonomy",
+    "ap/groupTerm": "term"
+  },
+  "supports": { "html": false },
+  "attributes": {
+    "taxonomy": { "type": "string", "default": "aplb_library_pdate" },
+    "showHeading": { "type": "boolean", "default": true }
+  }
+}

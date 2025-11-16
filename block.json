@@ -7,7 +7,7 @@
   "icon": "images-alt2",
   "textdomain": "ap-query-loop",
   "parent": ["core/query"],
-  "usesContext": ["query", "queryId"],
+  "usesContext": ["query", "queryId", "ap/groupTax", "ap/groupTerm"],
   "supports": { "html": false },
   "attributes": {},
   "editorScript": "file:./build/index.js",
