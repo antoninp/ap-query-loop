@@ -44,8 +44,13 @@ registerBlockType('ap/group-by-tax', {
   attributes: {
     taxonomy: { type: 'string', default: 'aplb_library_pdate' },
   },
-  edit: ({ attributes, setAttributes }) => {
+  edit: ({ attributes, setAttributes, clientId }) => {
     const blockProps = useBlockProps();
+    const TEMPLATE = [
+      ['ap/term-info', { tagName: 'h3' }],
+      ['ap/query-loop-gallery']
+    ];
+    
     return (
       <>
         <InspectorControls>
@@ -59,22 +64,23 @@ registerBlockType('ap/group-by-tax', {
           </PanelBody>
         </InspectorControls>
         <div { ...blockProps }>
-          <div style={{ padding: '1rem', border: '2px dashed #ccc', background: '#f9f9f9' }}>
-            <p style={{ margin: 0, fontWeight: 600 }}>{ __('AP Group by Taxonomy', 'ap-query-loop') }</p>
+          <div style={{ padding: '1rem', border: '2px dashed #8b5cf6', background: '#faf5ff' }}>
+            <p style={{ margin: 0, fontWeight: 600, color: '#7c3aed' }}>
+              🔗 { __('AP Group by Taxonomy', 'ap-query-loop') } ({ attributes.taxonomy })
+            </p>
             <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.85rem', color: '#666' }}>
-              { __('Add blocks below (e.g., Heading, AP Query Loop Gallery) to compose the layout for each term group.', 'ap-query-loop') }
+              { __('Add blocks below (e.g., Term Info, AP Query Loop Gallery) to compose the layout for each term group.', 'ap-query-loop') }
             </p>
             <InnerBlocks
-              template={[
-                ['core/heading', { level: 3, placeholder: __('Term Name (use Term Info block)', 'ap-query-loop') }],
-                ['ap/query-loop-gallery']
-              ]}
+              template={ TEMPLATE }
+              templateLock={ false }
             />
           </div>
         </div>
       </>
     );
   },
+  // Important: serialize inner blocks so we can access parsed_block['innerBlocks'] server-side
   save: () => <InnerBlocks.Content />
 });
 
@@ -84,12 +90,35 @@ registerBlockType('ap/term-info', {
   description: __('Display the current taxonomy term name. Use inside AP Group by Taxonomy.', 'ap-query-loop'),
   icon: 'tag',
   category: 'theme',
-  edit: () => (
-    <div { ...useBlockProps() }>
-      <p style={{ margin: 0, padding: '0.5rem', background: '#f0f0f0', border: '1px solid #ddd', borderRadius: '2px' }}>
-        <strong>{ __('Term Name', 'ap-query-loop') }</strong> { __('(will display current term)', 'ap-query-loop') }
-      </p>
-    </div>
-  ),
+  attributes: {
+    tagName: { type: 'string', default: 'h3' }
+  },
+  edit: ({ attributes, setAttributes }) => {
+    const blockProps = useBlockProps();
+    return (
+      <>
+        <InspectorControls>
+          <PanelBody title={ __('Settings', 'ap-query-loop') } initialOpen={ true }>
+            <TextControl
+              label={ __('HTML Tag', 'ap-query-loop') }
+              help={ __('e.g., h2, h3, p, div', 'ap-query-loop') }
+              value={ attributes.tagName || 'h3' }
+              onChange={ (value) => setAttributes({ tagName: value }) }
+            />
+          </PanelBody>
+        </InspectorControls>
+        <div { ...blockProps }>
+          <div style={{ margin: 0, padding: '0.75rem', background: '#e0f2fe', border: '1px solid #0ea5e9', borderRadius: '4px' }}>
+            <strong style={{ color: '#0369a1' }}>
+              📌 { __('Term Name', 'ap-query-loop') }
+            </strong>
+            <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+              ({ __('renders as', 'ap-query-loop') } &lt;{ attributes.tagName || 'h3' }&gt;)
+            </span>
+          </div>
+        </div>
+      </>
+    );
+  },
   save: () => null
 });

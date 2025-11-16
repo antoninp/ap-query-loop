@@ -8,15 +8,11 @@
   "textdomain": "ap-query-loop",
   "parent": ["core/query"],
   "usesContext": ["query", "queryId"],
-  "providesContext": {
-    "ap/groupTax": "taxonomy",
-    "ap/groupTerm": "currentTermSlug",
-    "ap/currentTerm": "currentTerm"
+  "supports": { 
+    "html": false,
+    "innerBlocks": true
   },
-  "supports": { "html": false },
   "attributes": {
-    "taxonomy": { "type": "string", "default": "aplb_library_pdate" },
-    "currentTermSlug": { "type": "string" },
-    "currentTerm": { "type": "object" }
+    "taxonomy": { "type": "string", "default": "aplb_library_pdate" }
   }
 }

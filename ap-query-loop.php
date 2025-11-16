@@ -42,7 +42,28 @@ if ( ! function_exists( 'wp_register_script' ) ) { function wp_register_script( 
 if ( ! function_exists( 'wp_register_style' ) ) { function wp_register_style( $handle, $src, $deps = [], $ver = false, $media = 'all' ) { return true; } }
 if ( ! function_exists( 'register_block_type' ) ) { function register_block_type( $path_or_name, $args = [] ) { return true; } }
 if ( ! class_exists( 'WP_Query' ) ) { class WP_Query { public $max_num_pages = 1; public $posts = []; public function __construct( $args = [] ) {} public function have_posts() { return false; } public function the_post() {} } }
-if ( ! class_exists( 'WP_Block' ) ) { class WP_Block { public $context = []; public $name = ''; public $attributes = []; public $inner_blocks = []; public function __construct( $parsed_block = [], $context = [] ){ $this->name = is_array($parsed_block)&&isset($parsed_block['blockName']) ? (string)$parsed_block['blockName'] : ''; $this->attributes = is_array($parsed_block)&&isset($parsed_block['attrs']) && is_array($parsed_block['attrs']) ? $parsed_block['attrs'] : []; $this->inner_blocks = is_array($parsed_block)&&isset($parsed_block['innerBlocks']) && is_array($parsed_block['innerBlocks']) ? $parsed_block['innerBlocks'] : []; $this->context = is_array($context)?$context:[]; } public function render(){ return ''; } } }
+if ( ! class_exists( 'WP_Block' ) ) {
+	class WP_Block {
+		public $context = [];
+		public $name = '';
+		public $attributes = [];
+		public $inner_blocks = [];
+		public $innerBlocks = [];
+		public $innerHTML = '';
+		public $inner_html = '';
+		public $inner_content = [];
+
+		public function __construct( $parsed_block = [], $context = [] ){
+			$this->name = is_array( $parsed_block ) && isset( $parsed_block['blockName'] ) ? (string) $parsed_block['blockName'] : '';
+			$this->attributes = is_array( $parsed_block ) && isset( $parsed_block['attrs'] ) && is_array( $parsed_block['attrs'] ) ? $parsed_block['attrs'] : [];
+			$this->inner_blocks = is_array( $parsed_block ) && isset( $parsed_block['innerBlocks'] ) && is_array( $parsed_block['innerBlocks'] ) ? $parsed_block['innerBlocks'] : [];
+			$this->innerHTML = is_array( $parsed_block ) && isset( $parsed_block['innerHTML'] ) ? $parsed_block['innerHTML'] : '';
+			$this->inner_content = is_array( $parsed_block ) && isset( $parsed_block['innerContent'] ) && is_array( $parsed_block['innerContent'] ) ? $parsed_block['innerContent'] : [];
+			$this->context = is_array( $context ) ? $context : [];
+		}
+		public function render(){ return ''; }
+	}
+}
 
 // Helper: convert a WP_Block instance (or nested) into a parsed block array structure expected by WP_Block constructor
 if ( ! function_exists( 'ap_qg_block_to_parsed' ) ) {
@@ -53,7 +74,11 @@ if ( ! function_exists( 'ap_qg_block_to_parsed' ) ) {
 		}
 		if ( $blk instanceof WP_Block ) {
 			$inner_parsed = [];
-			if ( is_object( $blk ) && property_exists( $blk, 'inner_blocks' ) && is_array( $blk->inner_blocks ) ) {
+			if ( is_object( $blk ) && property_exists( $blk, 'innerBlocks' ) && is_array( $blk->innerBlocks ) ) {
+				foreach ( $blk->innerBlocks as $ib ) {
+					$inner_parsed[] = ap_qg_block_to_parsed( $ib );
+				}
+			} elseif ( is_object( $blk ) && property_exists( $blk, 'inner_blocks' ) && is_array( $blk->inner_blocks ) ) {
 				foreach ( $blk->inner_blocks as $ib ) {
 					$inner_parsed[] = ap_qg_block_to_parsed( $ib );
 				}
@@ -63,15 +88,61 @@ if ( ! function_exists( 'ap_qg_block_to_parsed' ) ) {
 				$attrs = $blk->attributes;
 			}
 			$name = ( is_object( $blk ) && property_exists( $blk, 'name' ) ) ? (string) $blk->name : '';
+
+			// Capture saved HTML and inner content so static (save) blocks render
+			$innerHTML = '';
+			if ( is_object( $blk ) && ( property_exists( $blk, 'innerHTML' ) || property_exists( $blk, 'inner_html' ) ) ) {
+				if ( property_exists( $blk, 'innerHTML' ) ) {
+					$innerHTML = (string) $blk->innerHTML;
+				} elseif ( property_exists( $blk, 'inner_html' ) ) {
+					$innerHTML = (string) $blk->inner_html;
+				}
+			}
+			if ( is_object( $blk ) && property_exists( $blk, 'inner_content' ) && is_array( $blk->inner_content ) ) {
+				$innerHTML = implode( '', $blk->inner_content );
+			}
+			$innerContent = [];
+			if ( is_object( $blk ) && property_exists( $blk, 'inner_content' ) && is_array( $blk->inner_content ) ) {
+				$innerContent = $blk->inner_content;
+			}
 			return [
 				'blockName'    => $name,
 				'attrs'        => $attrs,
 				'innerBlocks'  => $inner_parsed,
-				'innerHTML'    => '',
-				'innerContent' => [],
+				'innerHTML'    => $innerHTML,
+				'innerContent' => $innerContent,
 			];
 		}
 		return [];
+	}
+}
+
+// Helper: render parsed blocks with proper context (recursively handles innerBlocks)
+if ( ! function_exists( 'ap_render_blocks_with_context' ) ) {
+	function ap_render_blocks_with_context( $parsed_blocks, $context ) {
+		$output = '';
+		
+		if ( ! is_array( $parsed_blocks ) ) {
+			return $output;
+		}
+		
+		foreach ( $parsed_blocks as $parsed_block ) {
+			if ( ! is_array( $parsed_block ) ) {
+				continue;
+			}
+			
+			// Handle plain HTML content (no blockName)
+			if ( empty( $parsed_block['blockName'] ) ) {
+				$output .= isset( $parsed_block['innerHTML'] ) ? $parsed_block['innerHTML'] : '';
+				continue;
+			}
+			
+			// Create WP_Block with the provided context
+			$block_instance = new WP_Block( $parsed_block, $context );
+			$output .= $block_instance->render();
+		}
+		
+		return $output;
 	}
 }
 
@@ -166,6 +237,13 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 	$filter_tax  = ( $block instanceof WP_Block && ! empty( $block->context['ap/groupTax'] ) ) ? (string) $block->context['ap/groupTax'] : '';
 	$filter_term = ( $block instanceof WP_Block && isset( $block->context['ap/groupTerm'] ) ) ? (string) $block->context['ap/groupTerm'] : '';
 
+	// Debug: Check what context we're receiving
+	$debug_info = '';
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		$context_data = ( $block instanceof WP_Block && is_array( $block->context ) ) ? $block->context : [];
+		$debug_info = '<!-- Gallery Debug: filter_tax=' . esc_html( $filter_tax ) . ', filter_term=' . esc_html( $filter_term ) . ', context=' . json_encode( $context_data ) . ' -->';
+	}
+
 	// Render a single gallery, optionally filtered by provided group context (no auto-group fallback)
 		// Flat list behavior (original): collect all featured images from current page posts
 		$image_ids = [];
@@ -221,15 +299,14 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
 			}
 		}
 
-		return '<div class="wp-block-ap-query-loop-gallery ap-query-loop-gallery">' . $html . '</div>';
+		return '<div class="wp-block-ap-query-loop-gallery ap-query-loop-gallery">' . $debug_info . $html . '</div>';
 }
 
 /**
- * Group-by-Taxonomy parent block render: iterates terms on current page and renders a heading + scoped child gallery.
+ * Group-by-Taxonomy parent block render: iterates terms on current page and renders inner blocks per term with proper context.
  */
 function ap_group_by_tax_render_block( $attributes, $content = '', $block = null ) {
-	$taxonomy     = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : 'aplb_library_pdate';
-	$show_heading = ! isset( $attributes['showHeading'] ) || (bool) $attributes['showHeading'];
+	$taxonomy = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : 'aplb_library_pdate';
 
 	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
 	if ( ! $use_context ) {
@@ -245,6 +322,7 @@ function ap_group_by_tax_render_block( $attributes, $content = '', $block = null
 		return '<div class="ap-group-by-tax ap-group-by-tax--empty">' . esc_html__( 'Taxonomy not found.', 'ap-query-loop' ) . '</div>';
 	}
 
+	// Collect all terms from current page posts
 	$groups = [];
 	foreach ( $wp_query->posts as $post ) {
 		if ( ! is_object( $post ) ) { continue; }
@@ -266,71 +344,100 @@ function ap_group_by_tax_render_block( $attributes, $content = '', $block = null
 		return '<div class="ap-group-by-tax ap-group-by-tax--empty">' . esc_html__( 'No matching terms for current posts.', 'ap-query-loop' ) . '</div>';
 	}
 
+	// Sort groups by term name
 	uasort( $groups, function( $a, $b ) {
 		$an = is_object( $a['term'] ) ? $a['term']->name : '';
 		$bn = is_object( $b['term'] ) ? $b['term']->name : '';
 		return strcmp( (string) $an, (string) $bn );
 	} );
 
-	// Render InnerBlocks template for each term
+	// Get inner blocks structure - WordPress stores them in parsed_block
+	$inner_blocks_list = [];
+	
+	// First try parsed_block (this is where WordPress stores the structure)
+	if ( is_object( $block ) && property_exists( $block, 'parsed_block' ) && is_array( $block->parsed_block ) ) {
+		if ( isset( $block->parsed_block['innerBlocks'] ) && is_array( $block->parsed_block['innerBlocks'] ) ) {
+			$inner_blocks_list = $block->parsed_block['innerBlocks'];
+		}
+	}
+	
+	// Fallback: try direct properties (for compatibility)
+	if ( empty( $inner_blocks_list ) ) {
+		if ( is_object( $block ) && property_exists( $block, 'innerBlocks' ) && is_array( $block->innerBlocks ) ) {
+			$inner_blocks_list = $block->innerBlocks;
+		} elseif ( is_object( $block ) && property_exists( $block, 'inner_blocks' ) && is_array( $block->inner_blocks ) ) {
+			$inner_blocks_list = $block->inner_blocks;
+		}
+	}
+
+	// Render a section for each term with context provided
 	$out = '<div class="ap-group-by-tax" data-taxonomy="' . esc_attr( $taxonomy ) . '">';
 
 	foreach ( $groups as $key => $data ) {
 		$term = $data['term'];
 		$slug = isset( $term->slug ) ? (string) $term->slug : (string) $key;
 		$name = isset( $term->name ) ? (string) $term->name : (string) $slug;
+		$term_id = isset( $term->term_id ) ? (int) $term->term_id : 0;
+		
 		$term_obj = [
 			'slug' => $slug,
 			'name' => $name,
-			'id'   => isset( $term->term_id ) ? (int) $term->term_id : 0,
+			'id'   => $term_id,
 		];
 
 		$out .= '<section class="ap-group-by-tax__group ap-group-by-tax__group--term-' . esc_attr( $slug ) . '">';
 
-		// Render InnerBlocks with term context injected
-		if ( ! empty( $block->inner_blocks ) ) {
-			foreach ( $block->inner_blocks as $inner_block ) {
-				$child_context = is_array( $block->context ) ? $block->context : [];
-				$child_context['ap/groupTax']       = $taxonomy;
-				$child_context['ap/groupTerm']      = $slug;
-				$child_context['ap/currentTermSlug'] = $slug;
-				$child_context['ap/currentTerm']    = $term_obj;
-				$parsed_child = ap_qg_block_to_parsed( $inner_block );
-				$child_block  = new WP_Block( $parsed_child, $child_context );
+		if ( ! empty( $inner_blocks_list ) ) {
+			// Save current global query state
+			$prev_queried_object = isset( $wp_query->queried_object ) ? $wp_query->queried_object : null;
+			$prev_is_tax = isset( $wp_query->is_tax ) ? $wp_query->is_tax : false;
+			$prev_query_vars = isset( $wp_query->query_vars ) && is_array( $wp_query->query_vars ) ? $wp_query->query_vars : [];
 
-				// Temporarily override the queried object so core term blocks render the current group term
-				global $wp_query;
-				$prev_qo = function_exists( 'get_queried_object' ) ? get_queried_object() : null;
-				$prev_is_tax = isset( $wp_query->is_tax ) ? $wp_query->is_tax : null;
-				$prev_tax_query_vars = isset( $wp_query->query_vars ) ? $wp_query->query_vars : [];
-				if ( is_object( $wp_query ) ) {
-					$wp_query->queried_object = (object) [
-						'term_id' => $term_obj['id'],
-						'name'    => $term_obj['name'],
-						'slug'    => $term_obj['slug'],
-						'taxonomy'=> $taxonomy,
-					];
+			// Temporarily set queried object to current term so core/post-terms and other core blocks work
+			if ( $term_id && function_exists( 'get_term' ) ) {
+				$full_term = get_term( $term_id, $taxonomy );
+				if ( ! is_wp_error( $full_term ) && is_object( $full_term ) ) {
+					$wp_query->queried_object = $full_term;
 					$wp_query->is_tax = true;
 					if ( is_array( $wp_query->query_vars ) ) {
 						$wp_query->query_vars['taxonomy'] = $taxonomy;
 						$wp_query->query_vars['term']     = $slug;
 					}
 				}
-
-				$out .= $child_block->render();
-
-				// Restore previous queried object
-				if ( is_object( $wp_query ) ) {
-					$wp_query->queried_object = $prev_qo;
-					if ( null !== $prev_is_tax ) { $wp_query->is_tax = $prev_is_tax; }
-					$wp_query->query_vars = $prev_tax_query_vars;
-				}
 			}
+
+			// Render each inner block with updated context
+			foreach ( $inner_blocks_list as $inner_block ) {
+				// Build child context with term information
+				$child_context = is_array( $block->context ) ? $block->context : [];
+				$child_context['ap/groupTax']  = $taxonomy;
+				$child_context['ap/groupTerm'] = $slug;
+				$child_context['ap/currentTerm'] = $term_obj;
+
+				// If inner_block is already a WP_Block instance, convert to parsed
+				// If it's an array (from parsed_block), use it directly
+				if ( $inner_block instanceof WP_Block ) {
+					$parsed_child = ap_qg_block_to_parsed( $inner_block );
+				} elseif ( is_array( $inner_block ) ) {
+					$parsed_child = $inner_block;
+				} else {
+					continue; // Skip invalid blocks
+				}
+				
+				// Create new WP_Block with updated context
+				$child_block = new WP_Block( $parsed_child, $child_context );
+				$out .= $child_block->render();
+			}
+
+			// Restore previous query state
+			$wp_query->queried_object = $prev_queried_object;
+			$wp_query->is_tax = $prev_is_tax;
+			$wp_query->query_vars = $prev_query_vars;
 		} else {
-			// Fallback: show placeholder with term name if no inner blocks
+			// Fallback: show placeholder if no inner blocks
 			$out .= '<div class="ap-group-by-tax__empty-placeholder">';
 			$out .= '<h3>' . esc_html( $name ) . '</h3>';
-			$out .= '<p><em>' . esc_html__( 'Add blocks inside "AP Group by Taxonomy" to compose your layout (e.g., heading, gallery, etc.).', 'ap-query-loop' ) . '</em></p>';
+			$out .= '<p><em>' . esc_html__( 'Add blocks inside "AP Group by Taxonomy" to compose your layout (e.g., Term Info, AP Query Loop Gallery, etc.).', 'ap-query-loop' ) . '</em></p>';
 			$out .= '</div>';
 		}
 
@@ -351,12 +458,19 @@ function ap_term_info_render_block( $attributes, $content = '', $block = null ) 
 		$tag_name = 'h3';
 	}
 
+	// Debug: Check what context we're receiving
+	$debug_info = '';
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		$context_data = ( $block instanceof WP_Block && is_array( $block->context ) ) ? $block->context : [];
+		$debug_info = '<!-- Term Info Debug: ' . json_encode( $context_data ) . ' -->';
+	}
+
 	$term = ( $block instanceof WP_Block && ! empty( $block->context['ap/currentTerm'] ) ) ? $block->context['ap/currentTerm'] : null;
 	if ( ! $term || ! is_array( $term ) || empty( $term['name'] ) ) {
-		return '<' . $tag_name . ' class="ap-term-info"><em>' . esc_html__( 'Term name will appear here', 'ap-query-loop' ) . '</em></' . $tag_name . '>';
+		return $debug_info . '<' . $tag_name . ' class="ap-term-info"><em>' . esc_html__( 'Term name will appear here', 'ap-query-loop' ) . '</em></' . $tag_name . '>';
 	}
 
 	$name = (string) $term['name'];
-	return '<' . $tag_name . ' class="ap-term-info">' . esc_html( $name ) . '</' . $tag_name . '>';
+	return $debug_info . '<' . $tag_name . ' class="ap-term-info">' . esc_html( $name ) . '</' . $tag_name . '>';
 }
 
