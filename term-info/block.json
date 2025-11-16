@@ -1,0 +1,15 @@
+{
+  "apiVersion": 3,
+  "name": "ap/term-info",
+  "title": "Term Info",
+  "description": "Display the current taxonomy term name. Use inside AP Group by Taxonomy.",
+  "category": "theme",
+  "icon": "tag",
+  "textdomain": "ap-query-loop",
+  "parent": ["ap/group-by-tax"],
+  "usesContext": ["ap/currentTerm"],
+  "supports": { "html": false },
+  "attributes": {
+    "tagName": { "type": "string", "default": "h3" }
+  }
+}

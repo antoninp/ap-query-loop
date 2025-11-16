@@ -2,7 +2,7 @@
   "apiVersion": 3,
   "name": "ap/group-by-tax",
   "title": "AP Group by Taxonomy",
-  "description": "Group the current Query Loop posts by a taxonomy and render a gallery per term.",
+  "description": "Group the current Query Loop posts by a taxonomy and render content per term. Use InnerBlocks to compose your layout.",
   "category": "theme",
   "icon": "filter",
   "textdomain": "ap-query-loop",
@@ -10,11 +10,13 @@
   "usesContext": ["query", "queryId"],
   "providesContext": {
     "ap/groupTax": "taxonomy",
-    "ap/groupTerm": "term"
+    "ap/groupTerm": "currentTermSlug",
+    "ap/currentTerm": "currentTerm"
   },
   "supports": { "html": false },
   "attributes": {
     "taxonomy": { "type": "string", "default": "aplb_library_pdate" },
-    "showHeading": { "type": "boolean", "default": true }
+    "currentTermSlug": { "type": "string" },
+    "currentTerm": { "type": "object" }
   }
 }
