@@ -27,6 +27,20 @@ const PACKAGE_FILE = path.join(root, 'package.json');
 const README_FILE = path.join(root, 'README.md');
 const TAG_ARG = process.argv.includes('--tag');
 const BUILD_ARG = process.argv.includes('--build');
+const PUSH_ARG = process.argv.includes('--push');
+// Optional: specify remote with --remote origin (defaults to origin if unset)
+function getArgValue(flag){
+  const idx = process.argv.indexOf(flag);
+  if(idx === -1) return null;
+  const next = process.argv[idx+1];
+  if(next && !next.startsWith('--')) return next;
+  const eqIdx = process.argv.findIndex(a => a.startsWith(flag+'='));
+  if(eqIdx !== -1){
+    return process.argv[eqIdx].split('=')[1];
+  }
+  return null;
+}
+const REMOTE_ARG = getArgValue('--remote');
 const AUTO_SUMMARY = process.argv.includes('--auto-summary');
 const AUTO_CHANGES = process.argv.includes('--auto-changes');
 const STABLE_TAG = process.argv.includes('--stable');
@@ -200,6 +214,43 @@ if(inRepo){
     }
   } else {
     console.log('🏷️  Skipping tag (use --tag to create)');
+  }
+  // Optionally push commit and tag
+  if(PUSH_ARG){
+    if(!DRY_RUN){
+      const remote = REMOTE_ARG || 'origin';
+      try {
+        // Try pushing to upstream (if configured) with tags
+        console.log('🚀 Pushing commit and tags (using --follow-tags)');
+        cp.execSync('git push --follow-tags', { stdio: 'inherit' });
+      } catch (e) {
+        try {
+          // Fallback: set upstream to remote for current branch, then push with tags
+          const currentBranch = git('git rev-parse --abbrev-ref HEAD');
+          console.log(`ℹ️ No upstream set. Setting upstream to ${remote}/${currentBranch}`);
+          cp.execSync(`git push -u ${remote} ${currentBranch}`, { stdio: 'inherit' });
+          cp.execSync(`git push ${remote} --follow-tags`, { stdio: 'inherit' });
+        } catch (e2) {
+          // Final fallback: push tag explicitly (in case commit already exists remotely)
+          if(TAG_ARG){
+            const tagName = `v${version}`;
+            console.log(`⚠️ Falling back to direct tag push: ${remote} ${tagName}`);
+            try {
+              cp.execSync(`git push ${remote} ${tagName}`, { stdio: 'inherit' });
+            } catch(e3){
+              exitError('Failed to push tag: '+e3.message);
+            }
+          } else {
+            exitError('Failed to push changes. Ensure a remote is configured or use --remote <name>.');
+          }
+        }
+      }
+      console.log('✅ Push complete');
+    } else {
+      console.log('🧪 Dry run: skipping git push');
+    }
+  } else {
+    console.log('🚫 Skipping push (use --push to push commits/tags)');
   }
 } else {
   console.log('ℹ️ Not in a git repository; skipping commit/tag');
