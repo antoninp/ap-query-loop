@@ -10,7 +10,7 @@ const path = require('path');
 const VERSION_FILE = path.join(__dirname, 'version.json');
 const PLUGIN_FILE = path.join(__dirname, 'ap-query-loop.php');
 const PACKAGE_FILE = path.join(__dirname, 'package.json');
-const README_TXT = path.join(__dirname, 'readme.txt');
+const README_TXT = path.join(__dirname, 'README.txt');
 
 // Read version from version.json
 const versionData = JSON.parse(fs.readFileSync(VERSION_FILE, 'utf8'));
@@ -49,7 +49,7 @@ if (oldPkgVersion !== newVersion) {
   console.log(`✅ package.json already at ${newVersion}`);
 }
 
-// Update readme.txt Stable tag
+// Update README.txt Stable tag
 if (fs.existsSync(README_TXT)) {
   let readmeContent = fs.readFileSync(README_TXT, 'utf8');
   const readmeUpdated = readmeContent.replace(
@@ -59,12 +59,12 @@ if (fs.existsSync(README_TXT)) {
   
   if (readmeUpdated !== readmeContent) {
     fs.writeFileSync(README_TXT, readmeUpdated, 'utf8');
-    console.log(`✅ Updated readme.txt Stable tag to ${newVersion}`);
+    console.log(`✅ Updated README.txt Stable tag to ${newVersion}`);
   } else {
-    console.log(`✅ readme.txt already at ${newVersion}`);
+    console.log(`✅ README.txt already at ${newVersion}`);
   }
 } else {
-  console.warn('⚠️  readme.txt not found; skipping Stable tag update');
+  console.warn('⚠️  README.txt not found; skipping Stable tag update');
 }
 
 console.log('🎉 Version sync complete!');

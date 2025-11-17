@@ -25,7 +25,7 @@ const VERSION_FILE = path.join(root, 'version.json');
 const PLUGIN_FILE = path.join(root, 'ap-query-loop.php');
 const PACKAGE_FILE = path.join(root, 'package.json');
 const README_FILE = path.join(root, 'README.md');
-const README_TXT = path.join(root, 'readme.txt');
+const README_TXT = path.join(root, 'README.txt');
 const TAG_ARG = process.argv.includes('--tag');
 const BUILD_ARG = process.argv.includes('--build');
 const PUSH_ARG = process.argv.includes('--push');
@@ -165,7 +165,7 @@ if(versionHeadingRe.test(readme)){
     console.log('✅ Prepended changelog entry to README');
 }
 
-// 4. Update WordPress.org readme.txt Stable tag (always)
+// 4. Update WordPress.org README.txt Stable tag (always)
 if(fs.existsSync(README_TXT)){
   let txt = fs.readFileSync(README_TXT,'utf8');
   if(/(^Stable tag:\s*).*$/im.test(txt)){
@@ -175,9 +175,9 @@ if(fs.existsSync(README_TXT)){
     txt = `Stable tag: ${version}\n` + txt;
   }
   if(!DRY_RUN){ fs.writeFileSync(README_TXT, txt, 'utf8'); }
-  console.log('✅ Updated readme.txt Stable tag');
+  console.log('✅ Updated README.txt Stable tag');
 } else {
-  console.log('ℹ️ readme.txt not found; skipping Stable tag update');
+  console.log('ℹ️ README.txt not found; skipping Stable tag update');
 }
 
 if(inRepo){
