@@ -80,13 +80,22 @@ npm start
 
 ```
 ap-query-loop/
-├── src/
-│   ├── index.js      # Block editor JavaScript (React)
-│   └── style.scss    # Frontend styles
-├── build/            # Compiled assets (generated)
-├── ap-query-loop.php # Main plugin file
-├── block.json        # Block metadata
-└── PLAN.md           # Project specification
+├── ap-query-loop.php       # Main plugin file
+├── blocks/                 # Block definitions
+│   ├── gallery/
+│   │   └── block.json      # APQL Gallery metadata
+│   ├── filter/
+│   │   └── block.json      # APQL Filter metadata
+│   └── term-name/
+│       └── block.json      # APQL Term Name metadata
+├── includes/               # PHP helpers
+│   └── render-callbacks.php # Server-side render functions
+├── src/                    # Build source
+│   ├── index.js           # Block registration & editor UI
+│   └── style.scss         # Frontend styles
+├── build/                  # Compiled assets (generated)
+├── scripts/                # Build automation
+│   └── update-version.js  # Release script
 ```
 
 ### Build Commands

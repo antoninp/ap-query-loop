@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name:       AP Query Loop
- * Description:       Display a list of posts from a selected post type as a gallery using featured images (Meow Gallery compatible).
+ * Plugin Name:       APQL Gallery
+ * Description:       Advanced Query Loop blocks: Filter posts by taxonomy terms and display as galleries with context-aware rendering.
  * Version:           0.2.0
  * Author:            Antonin Puleo
- * Text Domain:       ap-query-loop
+ * Text Domain:       apql-gallery
  * Requires at least: 6.5
  * Requires PHP:      7.4
  */
@@ -146,322 +146,81 @@ if ( ! function_exists( 'ap_render_blocks_with_context' ) ) {
 	}
 }
 
-// Load text domain (if languages/ present later)
+// Load text domain
 add_action( 'init', function() {
-	load_plugin_textdomain( 'ap-query-loop', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	load_plugin_textdomain( 'apql-gallery', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 } );
 
+// Include render callbacks
+require_once __DIR__ . '/includes/render-callbacks.php';
+
 /**
- * Register block from block.json and hook up render callback.
+ * Register blocks from block.json metadata.
  */
 add_action( 'init', function() {
-    $dir = __DIR__;
+	$plugin_dir = __DIR__;
 
-    // Register editor script with proper WP dependencies (ensures ServerSideRender is available in editor)
-    $editor_handle = 'ap-query-loop-editor';
-    $editor_file   = $dir . '/build/index.js';
-    if ( file_exists( $editor_file ) ) {
-        wp_register_script(
-            $editor_handle,
-            plugins_url( 'build/index.js', __FILE__ ),
-            [ 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-block-editor', 'wp-server-side-render' ],
-            filemtime( $editor_file ),
-            true
-        );
-    }
-
-    // Register style (frontend)
-    $style_handle = 'ap-query-loop-style';
-    $style_file   = $dir . '/build/style-index.css';
-    if ( file_exists( $style_file ) ) {
-        wp_register_style(
-            $style_handle,
-            plugins_url( 'build/style-index.css', __FILE__ ),
-            [],
-            filemtime( $style_file )
-        );
-    }
-
-	// Register block using metadata but override assets and render callback
-	register_block_type( $dir, [
-		'editor_script'   => $editor_handle,
-		'style'           => $style_handle,
-		'render_callback' => 'apql_gallery_render_block',
-	] );
-
-	// Register the APQL Filter block in subfolder (if present)
-	$group_dir = $dir . '/group-by-tax';
-	if ( is_dir( $group_dir ) ) {
-		register_block_type( $group_dir, [
-			'editor_script'   => $editor_handle,
-			'style'           => $style_handle,
-			'render_callback' => 'apql_filter_render_block',
-		] );
+	// Register editor script with proper WP dependencies
+	$editor_handle = 'apql-gallery-editor';
+	$editor_file   = $plugin_dir . '/build/index.js';
+	if ( file_exists( $editor_file ) ) {
+		wp_register_script(
+			$editor_handle,
+			plugins_url( 'build/index.js', __FILE__ ),
+			array( 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-block-editor', 'wp-server-side-render' ),
+			filemtime( $editor_file ),
+			true
+		);
 	}
 
-	// Register the APQL Term Name block
-	$term_info_dir = $dir . '/term-info';
-	if ( is_dir( $term_info_dir ) ) {
-		register_block_type( $term_info_dir, [
-			'editor_script'   => $editor_handle,
-			'style'           => $style_handle,
-			'render_callback' => 'apql_term_name_render_block',
-		] );
+	// Register frontend style
+	$style_handle = 'apql-gallery-style';
+	$style_file   = $plugin_dir . '/build/style-index.css';
+	if ( file_exists( $style_file ) ) {
+		wp_register_style(
+			$style_handle,
+			plugins_url( 'build/style-index.css', __FILE__ ),
+			array(),
+			filemtime( $style_file )
+		);
+	}
+
+	// Register Gallery block
+	$gallery_dir = $plugin_dir . '/blocks/gallery';
+	if ( is_dir( $gallery_dir ) ) {
+		register_block_type(
+			$gallery_dir,
+			array(
+				'editor_script'   => $editor_handle,
+				'style'           => $style_handle,
+				'render_callback' => 'apql_gallery_render_block',
+			)
+		);
+	}
+
+	// Register Filter block
+	$filter_dir = $plugin_dir . '/blocks/filter';
+	if ( is_dir( $filter_dir ) ) {
+		register_block_type(
+			$filter_dir,
+			array(
+				'editor_script'   => $editor_handle,
+				'style'           => $style_handle,
+				'render_callback' => 'apql_filter_render_block',
+			)
+		);
+	}
+
+	// Register Term Name block
+	$term_name_dir = $plugin_dir . '/blocks/term-name';
+	if ( is_dir( $term_name_dir ) ) {
+		register_block_type(
+			$term_name_dir,
+			array(
+				'editor_script'   => $editor_handle,
+				'style'           => $style_handle,
+				'render_callback' => 'apql_term_name_render_block',
+			)
+		);
 	}
 } );
-
-/**
- * Server-side render callback for the block.
- *
- * @param array $attributes Block attributes.
- * @param string $content   Block inner content (unused).
- * @param WP_Block $block   Full block instance.
- * @return string HTML
- */
-function apql_gallery_render_block( $attributes, $content = '', $block = null ) {
-	// Must be inside a Query Loop block providing 'query' context.
-	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
-	if ( ! $use_context ) {
-		return '<div class="wp-block-apql-gallery apql-gallery"><em>' . esc_html__( 'Place this block inside a Query Loop block.', 'ap-query-loop' ) . '</em></div>';
-	}
-
-	// We DO NOT create a new query. We rely entirely on the query already
-	// executed by the parent core/query block. At this point in rendering,
-	// the global $wp_query should represent that query (inherited or custom).
-	global $wp_query;
-	if ( ! ( $wp_query instanceof WP_Query ) || empty( $wp_query->posts ) ) {
-		return '<div class="apql-empty">' . esc_html__( 'No posts found.', 'ap-query-loop' ) . '</div>';
-	}
-
-	// Optional filtering context from parent group block
-	$filter_tax  = ( $block instanceof WP_Block && ! empty( $block->context['apql/filterTax'] ) ) ? (string) $block->context['apql/filterTax'] : '';
-	$filter_term = ( $block instanceof WP_Block && isset( $block->context['apql/filterTerm'] ) ) ? (string) $block->context['apql/filterTerm'] : '';
-
-	// Render a single gallery, optionally filtered by provided group context (no auto-group fallback)
-		// Flat list behavior (original): collect all featured images from current page posts
-		$image_ids = [];
-		foreach ( $wp_query->posts as $post ) {
-			if ( ! is_object( $post ) ) { continue; }
-			$post_id  = isset( $post->ID ) ? (int) $post->ID : 0;
-			if ( ! $post_id ) { continue; }
-			if ( $filter_tax && $filter_term ) {
-				$terms = get_the_terms( $post_id, $filter_tax );
-				if ( is_wp_error( $terms ) || empty( $terms ) ) { continue; }
-				$slugs = array_map( function( $t ){ return is_object( $t ) && isset( $t->slug ) ? (string) $t->slug : ''; }, $terms );
-				if ( ! in_array( $filter_term, $slugs, true ) ) { continue; }
-			}
-			$thumb_id = get_post_thumbnail_id( $post_id );
-			if ( $thumb_id ) { $image_ids[] = (int) $thumb_id; }
-		}
-		if ( empty( $image_ids ) ) {
-			return '<div class="apql-empty">' . esc_html__( 'No posts found.', 'ap-query-loop' ) . '</div>';
-		}
-
-		$ids_csv = implode( ',', array_map( 'intval', $image_ids ) );
-
-		// Prefer Meow Gallery shortcode if available.
-		global $shortcode_tags;
-		$has_meow = is_array( $shortcode_tags ) && ( isset( $shortcode_tags['meow-gallery'] ) || isset( $shortcode_tags['meow_gallery'] ) );
-
-		$html = '';
-		if ( $has_meow ) {
-			if ( isset( $shortcode_tags['meow-gallery'] ) ) {
-				$html = do_shortcode( '[meow-gallery ids="' . esc_attr( $ids_csv ) . '"]' );
-			} elseif ( isset( $shortcode_tags['meow_gallery'] ) ) {
-				$html = do_shortcode( '[meow_gallery ids="' . esc_attr( $ids_csv ) . '"]' );
-			}
-		}
-
-		// Fallback chain if Meow not present (or shortcode returned empty).
-		if ( empty( $html ) ) {
-			$gallery  = '<figure class="wp-block-gallery has-nested-images is-cropped">';
-			foreach ( $image_ids as $id ) {
-				$img = wp_get_attachment_image( $id, 'large', false, [ 'loading' => 'lazy', 'class' => 'wp-image-' . intval( $id ) ] );
-				if ( $img ) {
-					$gallery .= '<figure class="wp-block-image">' . $img . '</figure>';
-				}
-			}
-			$gallery .= '</figure>';
-			$html = $gallery;
-
-			if ( empty( $html ) ) {
-				$shortcode_html = gallery_shortcode( [ 'ids' => $ids_csv, 'size' => 'large', 'link' => 'none' ] );
-				if ( ! empty( $shortcode_html ) ) {
-					$html = $shortcode_html;
-				}
-			}
-		}
-
-		return '<div class="wp-block-apql-gallery apql-gallery">' . $html . '</div>';
-}
-
-/**
- * Group-by-Taxonomy parent block render: iterates terms on current page and renders inner blocks per term with proper context.
- */
-function apql_filter_render_block( $attributes, $content = '', $block = null ) {
-	$taxonomy = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : '';
-
-	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
-	if ( ! $use_context ) {
-		return '<div class="apql-filter"><em>' . esc_html__( 'Place this block inside a Query Loop block.', 'ap-query-loop' ) . '</em></div>';
-	}
-
-	// If no taxonomy is selected, prompt the user (editor-friendly message)
-	if ( '' === $taxonomy ) {
-		return '<div class="apql-filter apql-filter--empty"><em>' . esc_html__( 'Select a taxonomy in the block settings.', 'ap-query-loop' ) . '</em></div>';
-	}
-
-	global $wp_query;
-	if ( ! ( $wp_query instanceof WP_Query ) || empty( $wp_query->posts ) ) {
-		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No posts found.', 'ap-query-loop' ) . '</div>';
-	}
-
-	if ( ! taxonomy_exists( $taxonomy ) ) {
-		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'Taxonomy not found.', 'ap-query-loop' ) . '</div>';
-	}
-
-	// Collect all terms from current page posts
-	$groups = [];
-	foreach ( $wp_query->posts as $post ) {
-		if ( ! is_object( $post ) ) { continue; }
-		$post_id = isset( $post->ID ) ? (int) $post->ID : 0;
-		if ( ! $post_id ) { continue; }
-		$terms = get_the_terms( $post_id, $taxonomy );
-		if ( is_wp_error( $terms ) || empty( $terms ) ) { continue; }
-		foreach ( $terms as $t ) {
-			$key = is_object( $t ) && isset( $t->slug ) ? (string) $t->slug : ( is_object( $t ) && isset( $t->term_id ) ? (string) $t->term_id : '' );
-			if ( '' === $key ) { continue; }
-			if ( ! isset( $groups[ $key ] ) ) {
-				$groups[ $key ] = [ 'term' => $t, 'count' => 0 ];
-			}
-			$groups[ $key ]['count']++;
-		}
-	}
-
-	if ( empty( $groups ) ) {
-		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No matching terms for current posts.', 'ap-query-loop' ) . '</div>';
-	}
-
-	// Sort groups by term name
-	uasort( $groups, function( $a, $b ) {
-		$an = is_object( $a['term'] ) ? $a['term']->name : '';
-		$bn = is_object( $b['term'] ) ? $b['term']->name : '';
-		return strcmp( (string) $an, (string) $bn );
-	} );
-
-	// Get inner blocks structure - WordPress stores them in parsed_block
-	$inner_blocks_list = [];
-	
-	// First try parsed_block (this is where WordPress stores the structure)
-	if ( is_object( $block ) && property_exists( $block, 'parsed_block' ) && is_array( $block->parsed_block ) ) {
-		if ( isset( $block->parsed_block['innerBlocks'] ) && is_array( $block->parsed_block['innerBlocks'] ) ) {
-			$inner_blocks_list = $block->parsed_block['innerBlocks'];
-		}
-	}
-	
-	// Fallback: try direct properties (for compatibility)
-	if ( empty( $inner_blocks_list ) ) {
-		if ( is_object( $block ) && property_exists( $block, 'innerBlocks' ) && is_array( $block->innerBlocks ) ) {
-			$inner_blocks_list = $block->innerBlocks;
-		} elseif ( is_object( $block ) && property_exists( $block, 'inner_blocks' ) && is_array( $block->inner_blocks ) ) {
-			$inner_blocks_list = $block->inner_blocks;
-		}
-	}
-
-	// Render a section for each term with context provided
-	$out = '<div class="apql-filter" data-taxonomy="' . esc_attr( $taxonomy ) . '">';
-
-	foreach ( $groups as $key => $data ) {
-		$term = $data['term'];
-		$slug = isset( $term->slug ) ? (string) $term->slug : (string) $key;
-		$name = isset( $term->name ) ? (string) $term->name : (string) $slug;
-		$term_id = isset( $term->term_id ) ? (int) $term->term_id : 0;
-		
-		$term_obj = [
-			'slug' => $slug,
-			'name' => $name,
-			'id'   => $term_id,
-		];
-
-		$out .= '<section class="apql-filter__group apql-filter__group--term-' . esc_attr( $slug ) . '">';
-
-		if ( ! empty( $inner_blocks_list ) ) {
-			// Save current global query state
-			$prev_queried_object = isset( $wp_query->queried_object ) ? $wp_query->queried_object : null;
-			$prev_is_tax = isset( $wp_query->is_tax ) ? $wp_query->is_tax : false;
-			$prev_query_vars = isset( $wp_query->query_vars ) && is_array( $wp_query->query_vars ) ? $wp_query->query_vars : [];
-
-			// Temporarily set queried object to current term so core/post-terms and other core blocks work
-			if ( $term_id && function_exists( 'get_term' ) ) {
-				$full_term = get_term( $term_id, $taxonomy );
-				if ( ! is_wp_error( $full_term ) && is_object( $full_term ) ) {
-					$wp_query->queried_object = $full_term;
-					$wp_query->is_tax = true;
-					if ( is_array( $wp_query->query_vars ) ) {
-						$wp_query->query_vars['taxonomy'] = $taxonomy;
-						$wp_query->query_vars['term']     = $slug;
-					}
-				}
-			}
-
-			// Render each inner block with updated context
-			foreach ( $inner_blocks_list as $inner_block ) {
-				// Build child context with term information
-				$child_context = is_array( $block->context ) ? $block->context : [];
-				$child_context['apql/filterTax']  = $taxonomy;
-				$child_context['apql/filterTerm'] = $slug;
-				$child_context['apql/currentTerm'] = $term_obj;
-
-				// If inner_block is already a WP_Block instance, convert to parsed
-				// If it's an array (from parsed_block), use it directly
-				if ( $inner_block instanceof WP_Block ) {
-					$parsed_child = ap_qg_block_to_parsed( $inner_block );
-				} elseif ( is_array( $inner_block ) ) {
-					$parsed_child = $inner_block;
-				} else {
-					continue; // Skip invalid blocks
-				}
-				
-				// Create new WP_Block with updated context
-				$child_block = new WP_Block( $parsed_child, $child_context );
-				$out .= $child_block->render();
-			}
-
-			// Restore previous query state
-			$wp_query->queried_object = $prev_queried_object;
-			$wp_query->is_tax = $prev_is_tax;
-			$wp_query->query_vars = $prev_query_vars;
-		} else {
-			// Fallback: show placeholder if no inner blocks
-			$out .= '<div class="apql-filter__empty-placeholder">';
-			$out .= '<h3>' . esc_html( $name ) . '</h3>';
-			$out .= '<p><em>' . esc_html__( 'Add blocks inside "APQL Filter" to compose your layout (e.g., APQL Term Name, APQL Gallery, etc.).', 'ap-query-loop' ) . '</em></p>';
-			$out .= '</div>';
-		}
-
-		$out .= '</section>';
-	}
-
-	$out .= '</div>';
-	return $out;
-}
-
-/**
- * APQL Term Name block render: displays current term name from context.
- */
-function apql_term_name_render_block( $attributes, $content = '', $block = null ) {
-	$tag_name = isset( $attributes['tagName'] ) && is_string( $attributes['tagName'] ) ? $attributes['tagName'] : 'h3';
-	$allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span' ];
-	if ( ! in_array( $tag_name, $allowed_tags, true ) ) {
-		$tag_name = 'h3';
-	}
-
-	$term = ( $block instanceof WP_Block && ! empty( $block->context['apql/currentTerm'] ) ) ? $block->context['apql/currentTerm'] : null;
-	if ( ! $term || ! is_array( $term ) || empty( $term['name'] ) ) {
-		return '<' . $tag_name . ' class="apql-term-name"><em>' . esc_html__( 'Term name will appear here', 'ap-query-loop' ) . '</em></' . $tag_name . '>';
-	}
-
-	$name = (string) $term['name'];
-	return '<' . $tag_name . ' class="apql-term-name">' . esc_html( $name ) . '</' . $tag_name . '>';
-}
-

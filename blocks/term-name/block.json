@@ -5,7 +5,7 @@
   "description": "Display the current taxonomy term name. Use inside APQL Filter.",
   "category": "theme",
   "icon": "tag",
-  "textdomain": "ap-query-loop",
+  "textdomain": "apql-gallery",
   "parent": ["apql/filter"],
   "usesContext": ["apql/currentTerm"],
   "supports": { "html": false },
