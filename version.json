@@ -1,11 +1,7 @@
 {
-  "version": "0.2.1",
-  "summary": "Release scripts update",
+  "version": "0.2.2",
+  "summary": "Release scripts fix",
   "changes": [
-    "Added auto push option in release script",
-    "Fixed scripts included in released zip",
-    "Added standard WP readme.txt",
-    "Added index.php to plugin folder to prevent directory listing",
-    "Updated README with new release instructions"
+    "Fixed README.txt not committed after release script execution"
   ]
 }
