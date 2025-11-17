@@ -64,6 +64,8 @@ registerBlockType('apql/filter', {
   category: 'theme',
   attributes: {
     taxonomy: { type: 'string', default: '' },
+    termOrderBy: { type: 'string', default: 'name' },
+    termOrder: { type: 'string', default: 'asc' },
   },
   edit: ({ attributes, setAttributes, clientId }) => {
     const blockProps = useBlockProps();
@@ -111,6 +113,27 @@ registerBlockType('apql/filter', {
               help={ __('Optional: override or type a custom taxonomy slug.', 'apql-gallery') }
               value={ attributes.taxonomy || '' }
               onChange={ (value) => setAttributes({ taxonomy: value }) }
+            />
+            <SelectControl
+              label={ __('Term Order By', 'apql-gallery') }
+              value={ attributes.termOrderBy || 'name' }
+              options={ [
+                { label: __('Name (A → Z)', 'apql-gallery'), value: 'name' },
+                { label: __('Slug (A → Z)', 'apql-gallery'), value: 'slug' },
+                { label: __('ID (numeric)', 'apql-gallery'), value: 'id' },
+                { label: __('Post Count', 'apql-gallery'), value: 'count' },
+                { label: __('Date from Name', 'apql-gallery'), value: 'date_name' },
+              ] }
+              onChange={ ( value ) => setAttributes( { termOrderBy: value } ) }
+            />
+            <SelectControl
+              label={ __('Term Order Direction', 'apql-gallery') }
+              value={ attributes.termOrder || 'asc' }
+              options={ [
+                { label: __('Ascending', 'apql-gallery'), value: 'asc' },
+                { label: __('Descending', 'apql-gallery'), value: 'desc' },
+              ] }
+              onChange={ ( value ) => setAttributes( { termOrder: value } ) }
             />
           </PanelBody>
         </InspectorControls>

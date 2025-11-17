@@ -186,13 +186,51 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No matching terms for current posts.', 'apql-gallery' ) . '</div>';
 	}
 
-	// Sort groups by term name
+	// Sort groups based on attributes
+	$order_by = isset( $attributes['termOrderBy'] ) ? (string) $attributes['termOrderBy'] : 'name';
+	$order    = isset( $attributes['termOrder'] ) ? strtolower( (string) $attributes['termOrder'] ) : 'asc';
+	$order    = in_array( $order, array( 'asc', 'desc' ), true ) ? $order : 'asc';
+
+	$value_for = function( $entry ) use ( $order_by ) {
+		$term  = isset( $entry['term'] ) ? $entry['term'] : null;
+		$count = isset( $entry['count'] ) ? (int) $entry['count'] : 0;
+		if ( ! is_object( $term ) ) {
+			return null;
+		}
+		switch ( $order_by ) {
+			case 'slug':
+				return isset( $term->slug ) ? (string) $term->slug : '';
+			case 'id':
+				return isset( $term->term_id ) ? (int) $term->term_id : 0;
+			case 'count':
+				return $count;
+			case 'date_name':
+				// Attempt to parse a date from the term name (e.g., "November 14, 2025").
+				$name = isset( $term->name ) ? (string) $term->name : '';
+				$ts   = $name ? strtotime( $name ) : false;
+				// Fallback: if parsing fails, return 0 to push to one side consistently.
+				return false !== $ts ? (int) $ts : 0;
+			case 'name':
+			default:
+				return isset( $term->name ) ? (string) $term->name : '';
+		}
+	};
+
 	uasort(
 		$groups,
-		function ( $a, $b ) {
-			$an = is_object( $a['term'] ) ? $a['term']->name : '';
-			$bn = is_object( $b['term'] ) ? $b['term']->name : '';
-			return strcmp( (string) $an, (string) $bn );
+		function ( $a, $b ) use ( $value_for, $order, $order_by ) {
+			$va = $value_for( $a );
+			$vb = $value_for( $b );
+
+			// Normalize types for compare
+			if ( is_int( $va ) && is_int( $vb ) ) {
+				$cmp = $va <=> $vb;
+			} else {
+				$cmp = strcmp( (string) $va, (string) $vb );
+			}
+
+			// For dates/numbers, a natural descending is often desired; we honor explicit order.
+			return 'desc' === $order ? -$cmp : $cmp;
 		}
 	);
 
@@ -200,7 +238,7 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 	$inner_blocks_list = array();
 
 	// First try parsed_block (this is where WordPress stores the structure)
-	if ( is_object( $block ) && property_exists( $block, 'parsed_block' ) && is_array( $block->parsed_block ) ) {
+	if ( is_object( $block ) && isset( $block->parsed_block ) && is_array( $block->parsed_block ) ) {
 		if ( isset( $block->parsed_block['innerBlocks'] ) && is_array( $block->parsed_block['innerBlocks'] ) ) {
 			$inner_blocks_list = $block->parsed_block['innerBlocks'];
 		}

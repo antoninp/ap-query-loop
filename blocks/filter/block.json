@@ -14,6 +14,8 @@
     "innerBlocks": true
   },
   "attributes": {
-    "taxonomy": { "type": "string", "default": "" }
+    "taxonomy": { "type": "string", "default": "" },
+    "termOrderBy": { "type": "string", "default": "name" },
+    "termOrder": { "type": "string", "default": "asc" }
   }
 }
