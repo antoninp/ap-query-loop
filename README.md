@@ -202,6 +202,19 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.0 - Major feature release: Taxonomy filtering and term display blocks
+- Added APQL Filter block to group Query Loop posts by taxonomy terms
+- Added APQL Term Name block with full styling controls (typography, colors, spacing)
+- Added term ordering options (name, slug, ID, post count, date from name)
+- Added post ordering controls to Query Loop variation (inspired by Advanced Query Loop)
+- Added prefix/suffix options and optional linking for term names
+- Added dropdown taxonomy selector with custom slug input fallback
+- Updated Query Loop variation to include filter + term name + gallery structure
+- Restructured plugin architecture with separate block directories
+- Renamed blocks: AP Group by Tax → APQL Filter, AP Query Loop Gallery → APQL Gallery, Term Info → APQL Term Name
+- Set default descending order for filtered galleries and terms
+- Fixed InnerBlocks support to properly serialize child blocks
+
 ### 0.1.5 - Fix query
 - Fixed issue with query parameters not being applied correctly to the gallery.
 
