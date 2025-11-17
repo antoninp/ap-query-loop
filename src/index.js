@@ -1,9 +1,10 @@
 import { registerBlockType, registerBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import ServerSideRender from '@wordpress/server-side-render';
-import { PanelBody, TextControl, SelectControl, Spinner } from '@wordpress/components';
+import { PanelBody, TextControl, SelectControl, Spinner, ToggleControl } from '@wordpress/components';
 import { InspectorControls, InnerBlocks, useBlockProps } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
+import { addFilter } from '@wordpress/hooks';
 
 // Import styles so they get built
 import './style.scss';
@@ -25,10 +26,26 @@ registerBlockType('apql/gallery', {
 // Provide a convenient Query variation that composes our gallery with no-results and pagination
 registerBlockVariation('core/query', {
   name: 'apql-filter-gallery',
-    title: __('Query: APQL Filter + Gallery', 'apql-gallery'),
-    description: __('Query with APQL Filter, APQL Term Name, APQL Gallery, No Results, and Pagination.', 'apql-gallery'),
+  title: __('Query: APQL Filter + Gallery', 'apql-gallery'),
+  description: __('Query with APQL Filter, APQL Term Name, APQL Gallery, No Results, and Pagination.', 'apql-gallery'),
   icon: 'images-alt2',
   scope: [ 'inserter' ],
+  attributes: {
+    namespace: 'apql-gallery',
+    query: {
+      perPage: 10,
+      pages: 0,
+      offset: 0,
+      postType: 'post',
+      order: 'desc',
+      orderBy: 'date',
+      author: '',
+      search: '',
+      exclude: [],
+      sticky: '',
+      inherit: false
+    }
+  },
   innerBlocks: [
     [ 'apql/filter', { taxonomy: '' }, [
         [ 'apql/term-name', { tagName: 'h3' } ],
@@ -156,3 +173,71 @@ registerBlockType('apql/term-name', {
   },
   save: () => null
 });
+
+// Add custom order controls to Query blocks with our variation
+addFilter(
+  'editor.BlockEdit',
+  'apql/query-order-controls',
+  (BlockEdit) => {
+    return (props) => {
+      const { name, attributes, setAttributes } = props;
+      
+      // Only add controls to core/query blocks
+      if (name !== 'core/query') {
+        return <BlockEdit {...props} />;
+      }
+      
+      // Only show controls if the query has our namespace
+      const hasAPQLNamespace = attributes?.namespace === 'apql-gallery';
+      
+      const orderByOptions = [
+        { label: __('Date', 'apql-gallery'), value: 'date' },
+        { label: __('Title', 'apql-gallery'), value: 'title' },
+        { label: __('Author', 'apql-gallery'), value: 'author' },
+        { label: __('Modified Date', 'apql-gallery'), value: 'modified' },
+        { label: __('Menu Order', 'apql-gallery'), value: 'menu_order' },
+        { label: __('Random', 'apql-gallery'), value: 'rand' },
+        { label: __('Comment Count', 'apql-gallery'), value: 'comment_count' },
+        { label: __('Post ID', 'apql-gallery'), value: 'id' },
+      ];
+      
+      return (
+        <>
+          <BlockEdit {...props} />
+          {hasAPQLNamespace && (
+            <InspectorControls>
+              <PanelBody title={__('Post Order', 'apql-gallery')} initialOpen={true}>
+                <SelectControl
+                  label={__('Order By', 'apql-gallery')}
+                  value={attributes?.query?.orderBy || 'date'}
+                  options={orderByOptions}
+                  onChange={(value) => {
+                    setAttributes({
+                      query: {
+                        ...attributes.query,
+                        orderBy: value
+                      }
+                    });
+                  }}
+                />
+                <ToggleControl
+                  label={__('Ascending Order', 'apql-gallery')}
+                  checked={attributes?.query?.order === 'asc'}
+                  onChange={() => {
+                    const currentOrder = attributes?.query?.order || 'desc';
+                    setAttributes({
+                      query: {
+                        ...attributes.query,
+                        order: currentOrder === 'asc' ? 'desc' : 'asc'
+                      }
+                    });
+                  }}
+                />
+              </PanelBody>
+            </InspectorControls>
+          )}
+        </>
+      );
+    };
+  }
+);

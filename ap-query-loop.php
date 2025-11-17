@@ -151,6 +151,26 @@ add_action( 'init', function() {
 	load_plugin_textdomain( 'apql-gallery', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 } );
 
+// Hook into query_loop_block_query_vars to apply custom order settings
+add_filter( 'query_loop_block_query_vars', function( $query, $block ) {
+	// Check if this is our query variation by looking at the block context
+	$block_query = isset( $block->context['query'] ) ? $block->context['query'] : array();
+	
+	// Only modify queries with our namespace
+	if ( isset( $block_query['namespace'] ) && 'apql-gallery' === $block_query['namespace'] ) {
+		// Apply order from block context (WordPress uses 'order')
+		if ( isset( $block_query['order'] ) && ! empty( $block_query['order'] ) ) {
+			$query['order'] = sanitize_key( $block_query['order'] );
+		}
+		// Apply orderBy from block context (WordPress uses 'orderby' in query vars)
+		if ( isset( $block_query['orderBy'] ) && ! empty( $block_query['orderBy'] ) ) {
+			$query['orderby'] = sanitize_key( $block_query['orderBy'] );
+		}
+	}
+	
+	return $query;
+}, 10, 2 );
+
 // Include render callbacks
 require_once __DIR__ . '/includes/render-callbacks.php';
 
