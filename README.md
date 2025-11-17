@@ -202,6 +202,9 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.2 - Release scripts fix
+- Fixed README.txt not committed after release script execution
+
 ### 0.2.1 - Release scripts update
 - Added auto push option in release script
 - Fixed scripts included in released zip
