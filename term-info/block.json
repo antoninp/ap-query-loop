@@ -1,13 +1,13 @@
 {
   "apiVersion": 3,
-  "name": "ap/term-info",
-  "title": "Term Info",
-  "description": "Display the current taxonomy term name. Use inside AP Group by Taxonomy.",
+  "name": "apql/term-name",
+  "title": "APQL Term Name",
+  "description": "Display the current taxonomy term name. Use inside APQL Filter.",
   "category": "theme",
   "icon": "tag",
   "textdomain": "ap-query-loop",
-  "parent": ["ap/group-by-tax"],
-  "usesContext": ["ap/currentTerm"],
+  "parent": ["apql/filter"],
+  "usesContext": ["apql/currentTerm"],
   "supports": { "html": false },
   "attributes": {
     "tagName": { "type": "string", "default": "h3" }

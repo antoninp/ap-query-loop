@@ -8,14 +8,14 @@ import { useSelect } from '@wordpress/data';
 // Import styles so they get built
 import './style.scss';
 
-registerBlockType('ap/query-loop-gallery', {
-  title: __('AP Query Loop Gallery', 'ap-query-loop'),
+registerBlockType('apql/gallery', {
+  title: __('APQL Gallery', 'apql-gallery'),
   description: __('Displays the current Query Loop posts as a gallery of featured images.', 'ap-query-loop'),
   icon: 'images-alt2',
   category: 'theme',
   edit: () => (
     <ServerSideRender
-      block="ap/query-loop-gallery"
+      block="apql/gallery"
       attributes={{}}
     />
   ),
@@ -24,25 +24,25 @@ registerBlockType('ap/query-loop-gallery', {
 
 // Provide a convenient Query variation that composes our gallery with no-results and pagination
 registerBlockVariation('core/query', {
-  name: 'ap-query-gallery-variation',
-  title: __('Query: Gallery (AP)', 'ap-query-loop'),
-  description: __('Query with AP Group by Taxonomy, Term Info, Gallery, No Results, and Pagination.', 'ap-query-loop'),
+  name: 'apql-filter-gallery',
+    title: __('Query: APQL Filter + Gallery', 'apql-gallery'),
+    description: __('Query with APQL Filter, APQL Term Name, APQL Gallery, No Results, and Pagination.', 'apql-gallery'),
   icon: 'images-alt2',
   scope: [ 'inserter' ],
   innerBlocks: [
-    [ 'ap/group-by-tax', { taxonomy: '' }, [
-        [ 'ap/term-info', { tagName: 'h3' } ],
-        [ 'ap/query-loop-gallery' ]
+    [ 'apql/filter', { taxonomy: '' }, [
+        [ 'apql/term-name', { tagName: 'h3' } ],
+        [ 'apql/gallery' ]
       ]],
     [ 'core/query-no-results' ],
     [ 'core/query-pagination' ]
   ]
 });
 
-// Register parent block: AP Group by Taxonomy (with InnerBlocks)
-registerBlockType('ap/group-by-tax', {
-  title: __('AP Group by Taxonomy', 'ap-query-loop'),
-  description: __('Group current Query posts by a taxonomy. Use InnerBlocks to compose your layout per term.', 'ap-query-loop'),
+// Register parent block: APQL Filter (with InnerBlocks)
+registerBlockType('apql/filter', {
+  title: __('APQL Filter', 'apql-gallery'),
+  description: __('Group current Query posts by a taxonomy. Use InnerBlocks to compose your layout per term.', 'apql-gallery'),
   icon: 'filter',
   category: 'theme',
   attributes: {
@@ -60,7 +60,7 @@ registerBlockType('ap/group-by-tax', {
     }, [] );
     const taxonomyOptions = Array.isArray( taxonomies )
       ? [
-          { label: __('Select a taxonomy', 'ap-query-loop'), value: '' },
+          { label: __('Select a taxonomy', 'apql-gallery'), value: '' },
           ...taxonomies.map( ( t ) => ({
             label: t?.name || t?.slug,
             value: t?.slug,
@@ -68,17 +68,17 @@ registerBlockType('ap/group-by-tax', {
         ]
       : null;
     const TEMPLATE = [
-      ['ap/term-info', { tagName: 'h3' }],
-      ['ap/query-loop-gallery']
+      ['apql/term-name', { tagName: 'h3' }],
+      ['apql/gallery']
     ];
     
     return (
       <>
         <InspectorControls>
-          <PanelBody title={ __('Grouping', 'ap-query-loop') } initialOpen={ true }>
+          <PanelBody title={ __('Grouping', 'apql-gallery') } initialOpen={ true }>
             { taxonomyOptions ? (
               <SelectControl
-                label={ __('Taxonomy', 'ap-query-loop') }
+                label={ __('Taxonomy', 'apql-gallery') }
                 value={ attributes.taxonomy || '' }
                 options={ taxonomyOptions }
                 onChange={ ( value ) => setAttributes( { taxonomy: value } ) }
@@ -86,12 +86,12 @@ registerBlockType('ap/group-by-tax', {
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Spinner />
-                <span>{ __('Loading taxonomies…', 'ap-query-loop') }</span>
+                <span>{ __('Loading taxonomies…', 'apql-gallery') }</span>
               </div>
             ) }
             <TextControl
-              label={ __('Custom taxonomy (slug)', 'ap-query-loop') }
-              help={ __('Optional: override or type a custom taxonomy slug.', 'ap-query-loop') }
+              label={ __('Custom taxonomy (slug)', 'apql-gallery') }
+              help={ __('Optional: override or type a custom taxonomy slug.', 'apql-gallery') }
               value={ attributes.taxonomy || '' }
               onChange={ (value) => setAttributes({ taxonomy: value }) }
             />
@@ -100,10 +100,10 @@ registerBlockType('ap/group-by-tax', {
         <div { ...blockProps }>
           <div style={{ padding: '1rem', border: '2px dashed #8b5cf6', background: '#faf5ff' }}>
             <p style={{ margin: 0, fontWeight: 600, color: '#7c3aed' }}>
-              🔗 { __('AP Group by Taxonomy', 'ap-query-loop') } ({ attributes.taxonomy })
+              🔗 { __('APQL Filter', 'apql-gallery') } ({ attributes.taxonomy })
             </p>
             <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.85rem', color: '#666' }}>
-              { __('Add blocks below (e.g., Term Info, AP Query Loop Gallery) to compose the layout for each term group.', 'ap-query-loop') }
+              { __('Add blocks below (e.g., APQL Term Name, APQL Gallery) to compose the layout for each term group.', 'apql-gallery') }
             </p>
             <InnerBlocks
               template={ TEMPLATE }
@@ -118,10 +118,10 @@ registerBlockType('ap/group-by-tax', {
   save: () => <InnerBlocks.Content />
 });
 
-// Register Term Info block (displays current term name)
-registerBlockType('ap/term-info', {
-  title: __('Term Info', 'ap-query-loop'),
-  description: __('Display the current taxonomy term name. Use inside AP Group by Taxonomy.', 'ap-query-loop'),
+// Register APQL Term Name block (displays current term name)
+registerBlockType('apql/term-name', {
+  title: __('APQL Term Name', 'apql-gallery'),
+  description: __('Display the current taxonomy term name. Use inside APQL Filter.', 'apql-gallery'),
   icon: 'tag',
   category: 'theme',
   attributes: {
@@ -132,10 +132,10 @@ registerBlockType('ap/term-info', {
     return (
       <>
         <InspectorControls>
-          <PanelBody title={ __('Settings', 'ap-query-loop') } initialOpen={ true }>
+          <PanelBody title={ __('Settings', 'apql-gallery') } initialOpen={ true }>
             <TextControl
-              label={ __('HTML Tag', 'ap-query-loop') }
-              help={ __('e.g., h2, h3, p, div', 'ap-query-loop') }
+              label={ __('HTML Tag', 'apql-gallery') }
+              help={ __('e.g., h2, h3, p, div', 'apql-gallery') }
               value={ attributes.tagName || 'h3' }
               onChange={ (value) => setAttributes({ tagName: value }) }
             />
@@ -144,10 +144,10 @@ registerBlockType('ap/term-info', {
         <div { ...blockProps }>
           <div style={{ margin: 0, padding: '0.75rem', background: '#e0f2fe', border: '1px solid #0ea5e9', borderRadius: '4px' }}>
             <strong style={{ color: '#0369a1' }}>
-              📌 { __('Term Name', 'ap-query-loop') }
+              📌 { __('Term Name', 'apql-gallery') }
             </strong>
             <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
-              ({ __('renders as', 'ap-query-loop') } &lt;{ attributes.tagName || 'h3' }&gt;)
+              ({ __('renders as', 'apql-gallery') } &lt;{ attributes.tagName || 'h3' }&gt;)
             </span>
           </div>
         </div>

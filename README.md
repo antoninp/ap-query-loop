@@ -1,4 +1,4 @@
-# AP Query Loop Gallery
+# APQL Gallery
 
 A WordPress Gutenberg block that displays posts from a selected post type as a gallery using featured images. Integrates with Meow Gallery when available.
 
@@ -40,21 +40,21 @@ In WordPress, go to Plugins > Add New > Upload Plugin and upload `ap-query-loop.
 
 1. Insert a **Query Loop** block (or use the provided variation "Query: Gallery (AP)").
 2. Configure the Query Loop (post type, filters, ordering, pagination) using core controls.
-3. Ensure the inner blocks include `AP Query Loop Gallery` (variation does this automatically).
+3. Ensure the inner blocks include `APQL Gallery` (variation does this automatically).
 4. Preview updates immediately via server render.
 5. Publish and view the gallery on the frontend.
 
-### AP Group by Taxonomy (parent block)
+### APQL Filter (parent block)
 
 This plugin also provides a parent block that groups the current Query Loop posts by a taxonomy and renders your chosen layout for every term.
 
-- Insert `AP Group by Taxonomy` inside a `core/query` block.
+- Insert `APQL Filter` inside a `core/query` block.
 - Choose the taxonomy in the block sidebar (dropdown or enter a custom slug).
-- Add blocks inside it (recommended: `Term Info` then `AP Query Loop Gallery`).
+- Add blocks inside it (recommended: `APQL Term Name` then `APQL Gallery`).
 - On the frontend, the block renders a section per term and passes context to children:
-   - `ap/currentTerm`: the current term object (slug, name, id)
-   - `ap/groupTax`: the taxonomy slug
-   - `ap/groupTerm`: the term slug
+   - `apql/currentTerm`: the current term object (slug, name, id)
+   - `apql/filterTax`: the taxonomy slug
+   - `apql/filterTerm`: the term slug
 
 Notes:
 - The block saves its children (InnerBlocks) and renders dynamically on the server to inject context per term.
@@ -118,8 +118,8 @@ Currently no custom filters or hooks exposed. Future versions may add:
 ## Changelog
 
 ### 0.2.0 - Group by Tax + UX
-- Added `AP Group by Taxonomy` parent block with server-side term grouping and context.
-- Added `Term Info` block to display the current term name.
+- Added `APQL Filter` parent block with server-side term grouping and context.
+- Added `APQL Term Name` block to display the current term name.
 - Improved editor UX: taxonomy dropdown and clearer guidance.
 
 ### 0.1.5 - Fix query

@@ -1,11 +1,11 @@
 {
   "apiVersion": 3,
-  "name": "ap/group-by-tax",
-  "title": "AP Group by Taxonomy",
+  "name": "apql/filter",
+  "title": "APQL Filter",
   "description": "Group the current Query Loop posts by a taxonomy and render content per term. Use InnerBlocks to compose your layout.",
   "category": "theme",
   "icon": "filter",
-  "textdomain": "ap-query-loop",
+  "textdomain": "apql-gallery",
   "parent": ["core/query"],
   
   "usesContext": ["query", "queryId"],
