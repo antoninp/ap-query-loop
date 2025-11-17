@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       APQL Gallery
  * Description:       Advanced Query Loop blocks: Filter posts by taxonomy terms and display as galleries with context-aware rendering.
- * Version:           0.2.0
+ * Version:           0.2.1
  * Author:            Antonin Puleo
  * Text Domain:       apql-gallery
  * Requires at least: 6.5

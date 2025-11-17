@@ -202,6 +202,13 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.1 - Release scripts update
+- Added auto push option in release script
+- Fixed scripts included in released zip
+- Added standard WP readme.txt
+- Added index.php to plugin folder to prevent directory listing
+- Updated README with new release instructions
+
 ### 0.2.0 - Major feature release: Taxonomy filtering and term display blocks
 - Added APQL Filter block to group Query Loop posts by taxonomy terms
 - Added APQL Term Name block with full styling controls (typography, colors, spacing)
