@@ -2,7 +2,16 @@ import { registerBlockType, registerBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import ServerSideRender from '@wordpress/server-side-render';
 import { PanelBody, TextControl, SelectControl, Spinner, ToggleControl } from '@wordpress/components';
-import { InspectorControls, InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+import { 
+  InspectorControls, 
+  BlockControls,
+  AlignmentControl,
+  InnerBlocks, 
+  useBlockProps,
+  __experimentalUseBorderProps as useBorderProps,
+  __experimentalUseColorProps as useColorProps,
+  __experimentalGetSpacingClassesAndStyles as useSpacingProps
+} from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
 
@@ -155,31 +164,61 @@ registerBlockType('apql/term-name', {
   icon: 'tag',
   category: 'theme',
   attributes: {
-    tagName: { type: 'string', default: 'h3' }
+    textAlign: { type: 'string' },
+    prefix: { type: 'string', default: '' },
+    suffix: { type: 'string', default: '' },
+    isLink: { type: 'boolean', default: false }
   },
   edit: ({ attributes, setAttributes }) => {
-    const blockProps = useBlockProps();
+    const { textAlign, prefix = '', suffix = '', isLink = false } = attributes;
+    
+    const blockProps = useBlockProps({
+      className: textAlign ? `has-text-align-${textAlign}` : undefined,
+    });
+    
     return (
       <>
+        <BlockControls group="block">
+          <AlignmentControl
+            value={ textAlign }
+            onChange={ (newAlign) => setAttributes({ textAlign: newAlign }) }
+          />
+        </BlockControls>
         <InspectorControls>
           <PanelBody title={ __('Settings', 'apql-gallery') } initialOpen={ true }>
+            <ToggleControl
+              label={ __('Make term a link', 'apql-gallery') }
+              checked={ isLink }
+              onChange={ () => setAttributes({ isLink: !isLink }) }
+              help={ __('Links to the term archive page.', 'apql-gallery') }
+            />
             <TextControl
-              label={ __('HTML Tag', 'apql-gallery') }
-              help={ __('e.g., h2, h3, p, div', 'apql-gallery') }
-              value={ attributes.tagName || 'h3' }
-              onChange={ (value) => setAttributes({ tagName: value }) }
+              label={ __('Prefix', 'apql-gallery') }
+              help={ __('Text or space to prepend to term.', 'apql-gallery') }
+              value={ prefix }
+              onChange={ (value) => setAttributes({ prefix: value }) }
+            />
+            <TextControl
+              label={ __('Suffix', 'apql-gallery') }
+              help={ __('Text or space to append to term.', 'apql-gallery') }
+              value={ suffix }
+              onChange={ (value) => setAttributes({ suffix: value }) }
             />
           </PanelBody>
         </InspectorControls>
         <div { ...blockProps }>
-          <div style={{ margin: 0, padding: '0.75rem', background: '#e0f2fe', border: '1px solid #0ea5e9', borderRadius: '4px' }}>
+          <span style={{ padding: '0.25rem 0.5rem', background: '#e0f2fe', border: '1px solid #0ea5e9', borderRadius: '4px', display: 'inline-block' }}>
             <strong style={{ color: '#0369a1' }}>
               📌 { __('Term Name', 'apql-gallery') }
             </strong>
-            <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
-              ({ __('renders as', 'apql-gallery') } &lt;{ attributes.tagName || 'h3' }&gt;)
-            </span>
-          </div>
+            {(prefix || suffix || isLink) && (
+              <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+                {prefix && <span>[{prefix}]</span>}
+                {isLink && <span>🔗</span>}
+                {suffix && <span>[{suffix}]</span>}
+              </span>
+            )}
+          </span>
         </div>
       </>
     );

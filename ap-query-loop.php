@@ -34,6 +34,8 @@ if ( ! function_exists( 'wp_get_attachment_image' ) ) { function wp_get_attachme
 if ( ! function_exists( 'taxonomy_exists' ) ) { function taxonomy_exists( $tax ){ return false; } }
 if ( ! function_exists( 'get_the_terms' ) ) { function get_the_terms( $post_id, $tax ){ return []; } }
 if ( ! function_exists( 'is_wp_error' ) ) { function is_wp_error( $thing ){ return false; } }
+if ( ! function_exists( 'get_term_link' ) ) { function get_term_link( $term, $taxonomy = '' ){ return '#'; } }
+if ( ! function_exists( 'get_block_wrapper_attributes' ) ) { function get_block_wrapper_attributes( $extra_attributes = [] ){ return ''; } }
 if ( ! function_exists( 'add_action' ) ) { function add_action( $hook, $callback ){ if ( is_callable( $callback ) ) { $callback(); } } }
 if ( ! function_exists( 'plugin_basename' ) ) { function plugin_basename( $file ){ return basename( (string) $file ); } }
 if ( ! function_exists( 'load_plugin_textdomain' ) ) { function load_plugin_textdomain( $domain, $deprecated = false, $rel_path = '' ) { return true; } }

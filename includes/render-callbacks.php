@@ -340,17 +340,59 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
  * @return string HTML output.
  */
 function apql_term_name_render_block( $attributes, $content = '', $block = null ) {
-	$tag_name     = isset( $attributes['tagName'] ) && is_string( $attributes['tagName'] ) ? $attributes['tagName'] : 'h3';
-	$allowed_tags = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span' );
-	if ( ! in_array( $tag_name, $allowed_tags, true ) ) {
-		$tag_name = 'h3';
-	}
+	$prefix     = isset( $attributes['prefix'] ) && is_string( $attributes['prefix'] ) ? $attributes['prefix'] : '';
+	$suffix     = isset( $attributes['suffix'] ) && is_string( $attributes['suffix'] ) ? $attributes['suffix'] : '';
+	// Handle isLink as both boolean and string for compatibility
+	$is_link    = ! empty( $attributes['isLink'] ) && ( $attributes['isLink'] === true || $attributes['isLink'] === 'true' || $attributes['isLink'] === 1 );
+	$text_align = isset( $attributes['textAlign'] ) && is_string( $attributes['textAlign'] ) ? $attributes['textAlign'] : '';
 
 	$term = ( $block instanceof WP_Block && ! empty( $block->context['apql/currentTerm'] ) ) ? $block->context['apql/currentTerm'] : null;
+	
 	if ( ! $term || ! is_array( $term ) || empty( $term['name'] ) ) {
-		return '<' . $tag_name . ' class="apql-term-name"><em>' . esc_html__( 'Term name will appear here', 'apql-gallery' ) . '</em></' . $tag_name . '>';
+		return '<div class="apql-term-name"><em>' . esc_html__( 'Term name will appear here', 'apql-gallery' ) . '</em></div>';
 	}
 
-	$name = (string) $term['name'];
-	return '<' . $tag_name . ' class="apql-term-name">' . esc_html( $name ) . '</' . $tag_name . '>';
+	$name    = (string) $term['name'];
+	$slug    = isset( $term['slug'] ) ? (string) $term['slug'] : '';
+	$term_id = isset( $term['id'] ) ? (int) $term['id'] : 0;
+
+	// Get the taxonomy from parent context
+	$taxonomy = ( $block instanceof WP_Block && ! empty( $block->context['apql/filterTax'] ) ) ? $block->context['apql/filterTax'] : '';
+
+	// Build the term link if needed
+	$term_link = '';
+	if ( $is_link && $term_id && $taxonomy && function_exists( 'get_term_link' ) ) {
+		$term_link = get_term_link( $term_id, $taxonomy );
+		if ( is_wp_error( $term_link ) ) {
+			$term_link = '';
+		}
+	}
+
+	// Build wrapper classes
+	$classes = array( 'apql-term-name' );
+	if ( $text_align ) {
+		$classes[] = 'has-text-align-' . $text_align;
+	}
+	
+	$wrapper_attributes = function_exists( 'get_block_wrapper_attributes' ) 
+		? get_block_wrapper_attributes( array( 'class' => implode( ' ', $classes ) ) )
+		: 'class="' . esc_attr( implode( ' ', $classes ) ) . '"';
+
+	// Build the term content with proper escaping
+	$term_text = '';
+	if ( $prefix ) {
+		$term_text .= esc_html( $prefix );
+	}
+	$term_text .= esc_html( $name );
+	if ( $suffix ) {
+		$term_text .= esc_html( $suffix );
+	}
+	
+	if ( $is_link && $term_link ) {
+		$term_content = '<a href="' . esc_url( $term_link ) . '" rel="tag">' . $term_text . '</a>';
+	} else {
+		$term_content = $term_text;
+	}
+
+	return '<div ' . $wrapper_attributes . '>' . $term_content . '</div>';
 }

@@ -15,3 +15,27 @@
   width: 100%;
   height: auto;
 }
+
+/* APQL Term Name styles */
+.apql-term-name {
+  &.has-text-align-left {
+    text-align: left;
+  }
+  
+  &.has-text-align-center {
+    text-align: center;
+  }
+  
+  &.has-text-align-right {
+    text-align: right;
+  }
+  
+  a {
+    text-decoration: none;
+    color: inherit;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

@@ -7,9 +7,40 @@
   "icon": "tag",
   "textdomain": "apql-gallery",
   "parent": ["apql/filter"],
-  "usesContext": ["apql/currentTerm"],
-  "supports": { "html": false },
+  "usesContext": ["apql/currentTerm", "apql/filterTax"],
+  "supports": { 
+    "html": false,
+    "color": {
+      "gradients": true,
+      "link": true,
+      "__experimentalDefaultControls": {
+        "background": true,
+        "text": true,
+        "link": true
+      }
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "__experimentalFontFamily": true,
+      "__experimentalFontWeight": true,
+      "__experimentalFontStyle": true,
+      "__experimentalTextTransform": true,
+      "__experimentalTextDecoration": true,
+      "__experimentalLetterSpacing": true,
+      "__experimentalDefaultControls": {
+        "fontSize": true
+      }
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    }
+  },
   "attributes": {
-    "tagName": { "type": "string", "default": "h3" }
+    "textAlign": { "type": "string" },
+    "prefix": { "type": "string", "default": "" },
+    "suffix": { "type": "string", "default": "" },
+    "isLink": { "type": "boolean", "default": false }
   }
 }
