@@ -33,17 +33,7 @@ registerBlockVariation('core/query', {
   attributes: {
     namespace: 'apql-gallery',
     query: {
-      perPage: 10,
-      pages: 0,
-      offset: 0,
-      postType: 'post',
-      order: 'desc',
-      orderBy: 'date',
-      author: '',
-      search: '',
-      exclude: [],
-      sticky: '',
-      inherit: false
+      inherit: true
     }
   },
   innerBlocks: [
@@ -65,7 +55,7 @@ registerBlockType('apql/filter', {
   attributes: {
     taxonomy: { type: 'string', default: '' },
     termOrderBy: { type: 'string', default: 'name' },
-    termOrder: { type: 'string', default: 'asc' },
+    termOrder: { type: 'string', default: 'desc' },
   },
   edit: ({ attributes, setAttributes, clientId }) => {
     const blockProps = useBlockProps();
@@ -128,7 +118,7 @@ registerBlockType('apql/filter', {
             />
             <SelectControl
               label={ __('Term Order Direction', 'apql-gallery') }
-              value={ attributes.termOrder || 'asc' }
+              value={ attributes.termOrder || 'desc' }
               options={ [
                 { label: __('Ascending', 'apql-gallery'), value: 'asc' },
                 { label: __('Descending', 'apql-gallery'), value: 'desc' },
@@ -251,7 +241,7 @@ addFilter(
                     setAttributes({
                       query: {
                         ...attributes.query,
-                        order: currentOrder === 'asc' ? 'desc' : 'asc'
+                        order: currentOrder === 'asc' ? 'desc' : 'desc'
                       }
                     });
                   }}

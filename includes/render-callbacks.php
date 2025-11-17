@@ -188,8 +188,8 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 
 	// Sort groups based on attributes
 	$order_by = isset( $attributes['termOrderBy'] ) ? (string) $attributes['termOrderBy'] : 'name';
-	$order    = isset( $attributes['termOrder'] ) ? strtolower( (string) $attributes['termOrder'] ) : 'asc';
-	$order    = in_array( $order, array( 'asc', 'desc' ), true ) ? $order : 'asc';
+	$order    = isset( $attributes['termOrder'] ) ? strtolower( (string) $attributes['termOrder'] ) : 'desc';
+	$order    = in_array( $order, array( 'asc', 'desc' ), true ) ? $order : 'desc';
 
 	$value_for = function( $entry ) use ( $order_by ) {
 		$term  = isset( $entry['term'] ) ? $entry['term'] : null;

@@ -16,6 +16,6 @@
   "attributes": {
     "taxonomy": { "type": "string", "default": "" },
     "termOrderBy": { "type": "string", "default": "name" },
-    "termOrder": { "type": "string", "default": "asc" }
+    "termOrder": { "type": "string", "default": "desc" }
   }
 }
