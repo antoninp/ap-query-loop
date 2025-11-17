@@ -25,6 +25,7 @@ const VERSION_FILE = path.join(root, 'version.json');
 const PLUGIN_FILE = path.join(root, 'ap-query-loop.php');
 const PACKAGE_FILE = path.join(root, 'package.json');
 const README_FILE = path.join(root, 'README.md');
+const README_TXT = path.join(root, 'readme.txt');
 const TAG_ARG = process.argv.includes('--tag');
 const BUILD_ARG = process.argv.includes('--build');
 const PUSH_ARG = process.argv.includes('--push');
@@ -43,7 +44,6 @@ function getArgValue(flag){
 const REMOTE_ARG = getArgValue('--remote');
 const AUTO_SUMMARY = process.argv.includes('--auto-summary');
 const AUTO_CHANGES = process.argv.includes('--auto-changes');
-const STABLE_TAG = process.argv.includes('--stable');
 const DRY_RUN = process.argv.includes('--dry-run');
 
 function exitError(msg){
@@ -165,23 +165,21 @@ if(versionHeadingRe.test(readme)){
     console.log('✅ Prepended changelog entry to README');
 }
 
-// 4. (Optional) Update WordPress.org readme.txt Stable tag
-if(STABLE_TAG){
-  const readmeTxt = path.join(root, 'readme.txt');
-  if(fs.existsSync(readmeTxt)){
-    let txt = fs.readFileSync(readmeTxt,'utf8');
-    if(/(^Stable tag:\s*).*$/im.test(txt)){
-      txt = txt.replace(/(^Stable tag:\s*).*$/im, `$1${version}`);
-    } else {
-      // Insert near top
-      txt = `Stable tag: ${version}\n` + txt;
-    }
-    if(!DRY_RUN){ fs.writeFileSync(readmeTxt, txt, 'utf8'); }
-    console.log('✅ Updated readme.txt Stable tag');
+// 4. Update WordPress.org readme.txt Stable tag (always)
+if(fs.existsSync(README_TXT)){
+  let txt = fs.readFileSync(README_TXT,'utf8');
+  if(/(^Stable tag:\s*).*$/im.test(txt)){
+    txt = txt.replace(/(^Stable tag:\s*).*$/im, `$1${version}`);
   } else {
-    console.log('ℹ️ readme.txt not found; skipping Stable tag update');
+    // Insert near top
+    txt = `Stable tag: ${version}\n` + txt;
   }
+  if(!DRY_RUN){ fs.writeFileSync(README_TXT, txt, 'utf8'); }
+  console.log('✅ Updated readme.txt Stable tag');
+} else {
+  console.log('ℹ️ readme.txt not found; skipping Stable tag update');
 }
+
 if(inRepo){
   if(BUILD_ARG){
     console.log('🏗️  Running build before commit/tag');
@@ -192,10 +190,7 @@ if(inRepo){
   const status = git('git status --porcelain');
   if(status){
     git(`git add "${PLUGIN_FILE}" "${PACKAGE_FILE}" "${README_FILE}" "${VERSION_FILE}"`);
-    if(STABLE_TAG){
-      const readmeTxt = path.join(root,'readme.txt');
-      if(fs.existsSync(readmeTxt)) git(`git add "${readmeTxt}"`);
-    }
+    if(fs.existsSync(README_TXT)) git(`git add "${README_TXT}"`);
     if(!DRY_RUN){
       git(`git commit -m "chore(release): v${version}"`);
       console.log('✅ Git commit created');

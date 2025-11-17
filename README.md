@@ -261,7 +261,6 @@ Flags:
 
 - `--tag`: Create annotated git tag `vX.Y.Z` after commit.
 - `--build`: Run `npm run build` before committing/tagging.
-- `--stable`: Also update `readme.txt` "Stable tag:" if present (for wp.org).
 - `--auto-summary`: Generate summary from Conventional Commits since last tag.
 - `--auto-changes`: Populate `changes` from Conventional Commits subjects since last tag.
 - `--dry-run`: Perform all steps without writing files, commits, or tags.
