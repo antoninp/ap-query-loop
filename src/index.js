@@ -1,8 +1,9 @@
 import { registerBlockType, registerBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import ServerSideRender from '@wordpress/server-side-render';
-import { PanelBody, TextControl } from '@wordpress/components';
+import { PanelBody, TextControl, SelectControl, Spinner } from '@wordpress/components';
 import { InspectorControls, InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+import { useSelect } from '@wordpress/data';
 
 // Import styles so they get built
 import './style.scss';
@@ -23,16 +24,19 @@ registerBlockType('ap/query-loop-gallery', {
 
 // Provide a convenient Query variation that composes our gallery with no-results and pagination
 registerBlockVariation('core/query', {
-	name: 'ap-query-gallery-variation',
-	title: __('Query: Gallery (AP)', 'ap-query-loop'),
-	description: __('Render the current query as a gallery of featured images, with no-results and pagination blocks.', 'ap-query-loop'),
-	icon: 'images-alt2',
-	scope: [ 'inserter' ],
-	innerBlocks: [
-		[ 'ap/query-loop-gallery' ],
-		[ 'core/query-no-results' ],
-		[ 'core/query-pagination' ]
-	]
+  name: 'ap-query-gallery-variation',
+  title: __('Query: Gallery (AP)', 'ap-query-loop'),
+  description: __('Query with AP Group by Taxonomy, Term Info, Gallery, No Results, and Pagination.', 'ap-query-loop'),
+  icon: 'images-alt2',
+  scope: [ 'inserter' ],
+  innerBlocks: [
+    [ 'ap/group-by-tax', { taxonomy: '' }, [
+        [ 'ap/term-info', { tagName: 'h3' } ],
+        [ 'ap/query-loop-gallery' ]
+      ]],
+    [ 'core/query-no-results' ],
+    [ 'core/query-pagination' ]
+  ]
 });
 
 // Register parent block: AP Group by Taxonomy (with InnerBlocks)
@@ -42,10 +46,27 @@ registerBlockType('ap/group-by-tax', {
   icon: 'filter',
   category: 'theme',
   attributes: {
-    taxonomy: { type: 'string', default: 'aplb_library_pdate' },
+    taxonomy: { type: 'string', default: '' },
   },
   edit: ({ attributes, setAttributes, clientId }) => {
     const blockProps = useBlockProps();
+    // Load all registered taxonomies to populate a dropdown
+    const taxonomies = useSelect( ( select ) => {
+      const core = select( 'core' );
+      if ( core && core.getTaxonomies ) {
+        return core.getTaxonomies( { per_page: -1, context: 'view' } );
+      }
+      return null;
+    }, [] );
+    const taxonomyOptions = Array.isArray( taxonomies )
+      ? [
+          { label: __('Select a taxonomy', 'ap-query-loop'), value: '' },
+          ...taxonomies.map( ( t ) => ({
+            label: t?.name || t?.slug,
+            value: t?.slug,
+          }) ),
+        ]
+      : null;
     const TEMPLATE = [
       ['ap/term-info', { tagName: 'h3' }],
       ['ap/query-loop-gallery']
@@ -55,9 +76,22 @@ registerBlockType('ap/group-by-tax', {
       <>
         <InspectorControls>
           <PanelBody title={ __('Grouping', 'ap-query-loop') } initialOpen={ true }>
+            { taxonomyOptions ? (
+              <SelectControl
+                label={ __('Taxonomy', 'ap-query-loop') }
+                value={ attributes.taxonomy || '' }
+                options={ taxonomyOptions }
+                onChange={ ( value ) => setAttributes( { taxonomy: value } ) }
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Spinner />
+                <span>{ __('Loading taxonomies…', 'ap-query-loop') }</span>
+              </div>
+            ) }
             <TextControl
-              label={ __('Taxonomy slug', 'ap-query-loop') }
-              help={ __('Enter the taxonomy to group by.', 'ap-query-loop') }
+              label={ __('Custom taxonomy (slug)', 'ap-query-loop') }
+              help={ __('Optional: override or type a custom taxonomy slug.', 'ap-query-loop') }
               value={ attributes.taxonomy || '' }
               onChange={ (value) => setAttributes({ taxonomy: value }) }
             />

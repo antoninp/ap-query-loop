@@ -306,11 +306,16 @@ function ap_query_loop_render_block( $attributes, $content = '', $block = null )
  * Group-by-Taxonomy parent block render: iterates terms on current page and renders inner blocks per term with proper context.
  */
 function ap_group_by_tax_render_block( $attributes, $content = '', $block = null ) {
-	$taxonomy = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : 'aplb_library_pdate';
+	$taxonomy = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : '';
 
 	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
 	if ( ! $use_context ) {
 		return '<div class="ap-group-by-tax"><em>' . esc_html__( 'Place this block inside a Query Loop block.', 'ap-query-loop' ) . '</em></div>';
+	}
+
+	// If no taxonomy is selected, prompt the user (editor-friendly message)
+	if ( '' === $taxonomy ) {
+		return '<div class="ap-group-by-tax ap-group-by-tax--empty"><em>' . esc_html__( 'Select a taxonomy in the block settings.', 'ap-query-loop' ) . '</em></div>';
 	}
 
 	global $wp_query;

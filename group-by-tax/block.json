@@ -7,12 +7,13 @@
   "icon": "filter",
   "textdomain": "ap-query-loop",
   "parent": ["core/query"],
+  
   "usesContext": ["query", "queryId"],
   "supports": { 
     "html": false,
     "innerBlocks": true
   },
   "attributes": {
-    "taxonomy": { "type": "string", "default": "aplb_library_pdate" }
+    "taxonomy": { "type": "string", "default": "" }
   }
 }
