@@ -251,9 +251,11 @@ Automated versioning & changelog:
 
 1. Make code changes; commit normally.
 2. Edit `version.json` with new `version`, `summary`, and `changes` array (optionally add `date`).
-3. Run `npm run release` to update versions and prepend the changelog entry in `README.md`.
-4. Push commits and tag: `git push && git push --tags`.
-5. GitHub Actions (release workflow) builds package from tag.
+3. Run `npm run release` to update versions and prepend the changelog entry in `README.md`. To create and push the tag automatically, use: `npm run release -- --tag --push`.
+4. If you didn't use `--push`, push manually:
+  - Push commit: `git push`
+  - Push tag: `git push --follow-tags` (or `git push origin vX.Y.Z`)
+5. GitHub Actions (release workflow) builds package from the pushed tag.
 
 Flags:
 
@@ -263,6 +265,8 @@ Flags:
 - `--auto-summary`: Generate summary from Conventional Commits since last tag.
 - `--auto-changes`: Populate `changes` from Conventional Commits subjects since last tag.
 - `--dry-run`: Perform all steps without writing files, commits, or tags.
+- `--push`: Push commit and tag after creation (uses `git push --follow-tags`; sets upstream if missing; falls back to pushing the tag directly if needed).
+- `--remote <name>`: Remote to use with `--push` (defaults to `origin`).
 
 Alternative tools: consider `standard-version`, `changesets`, or `release-please` if you later adopt Conventional Commits or want automated semver inference. Current custom script keeps WordPress-specific headers synchronized.
 
