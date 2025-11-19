@@ -47,18 +47,28 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
 			continue;
 		}
 		if ( $filter_tax && $filter_term ) {
-			$terms = get_the_terms( $post_id, $filter_tax );
-			if ( is_wp_error( $terms ) || empty( $terms ) ) {
-				continue;
-			}
-			$slugs = array_map(
-				function ( $t ) {
-					return is_object( $t ) && isset( $t->slug ) ? (string) $t->slug : '';
-				},
-				$terms
-			);
-			if ( ! in_array( $filter_term, $slugs, true ) ) {
-				continue;
+			// Check if filter is taxonomy or meta field
+			if ( taxonomy_exists( $filter_tax ) ) {
+				// Taxonomy filtering
+				$terms = get_the_terms( $post_id, $filter_tax );
+				if ( is_wp_error( $terms ) || empty( $terms ) ) {
+					continue;
+				}
+				$slugs = array_map(
+					function ( $t ) {
+						return is_object( $t ) && isset( $t->slug ) ? (string) $t->slug : '';
+					},
+					$terms
+				);
+				if ( ! in_array( $filter_term, $slugs, true ) ) {
+					continue;
+				}
+			} else {
+				// Meta field filtering
+				$meta_value = get_post_meta( $post_id, $filter_tax, true );
+				if ( $meta_value !== $filter_term ) {
+					continue;
+				}
 			}
 		}
 		$thumb_id = get_post_thumbnail_id( $post_id );
@@ -124,7 +134,157 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
 }
 
 /**
- * APQL Filter block render: iterates terms on current page and renders inner blocks per term with proper context.
+ * Helper: Render groups based on meta field values (new behavior for meta grouping).
+ */
+function apql_filter_render_meta_groups( $attributes, $content, $block, $wp_query, $meta_key, $meta_type, $date_format ) {
+	if ( '' === $meta_key ) {
+		return '<div class="apql-filter apql-filter--empty"><em>' . esc_html__( 'Select a meta key in the block settings.', 'apql-gallery' ) . '</em></div>';
+	}
+
+	// Collect all meta values from current page posts
+	$groups = array();
+	foreach ( $wp_query->posts as $post ) {
+		if ( ! is_object( $post ) ) {
+			continue;
+		}
+		$post_id = isset( $post->ID ) ? (int) $post->ID : 0;
+		if ( ! $post_id ) {
+			continue;
+		}
+		
+		$meta_value = get_post_meta( $post_id, $meta_key, true );
+		if ( ! $meta_value ) {
+			continue;
+		}
+
+		// Use meta value as key
+		$key = (string) $meta_value;
+		
+		if ( ! isset( $groups[ $key ] ) ) {
+			// Format display name based on meta type
+			$display_name = $key;
+			if ( 'date' === $meta_type ) {
+				$timestamp = strtotime( $key );
+				if ( $timestamp ) {
+					$display_name = date_i18n( $date_format, $timestamp );
+				}
+			}
+			
+			$groups[ $key ] = array(
+				'value'  => $key,
+				'name'   => $display_name,
+				'count'  => 0,
+				'type'   => $meta_type,
+			);
+		}
+		++$groups[ $key ]['count'];
+	}
+
+	if ( empty( $groups ) ) {
+		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No matching meta values for current posts.', 'apql-gallery' ) . '</div>';
+	}
+
+	// Sort groups
+	$order_by = isset( $attributes['termOrderBy'] ) ? (string) $attributes['termOrderBy'] : 'name';
+	$order    = isset( $attributes['termOrder'] ) ? strtolower( (string) $attributes['termOrder'] ) : 'desc';
+	$order    = in_array( $order, array( 'asc', 'desc' ), true ) ? $order : 'desc';
+
+	uasort(
+		$groups,
+		function ( $a, $b ) use ( $order_by, $order ) {
+			$va = $vb = null;
+			
+			switch ( $order_by ) {
+				case 'count':
+					$va = isset( $a['count'] ) ? (int) $a['count'] : 0;
+					$vb = isset( $b['count'] ) ? (int) $b['count'] : 0;
+					break;
+				case 'name':
+				default:
+					// For dates in YYYY-MM-DD format, string comparison works correctly
+					$va = isset( $a['value'] ) ? (string) $a['value'] : '';
+					$vb = isset( $b['value'] ) ? (string) $b['value'] : '';
+					break;
+			}
+
+			if ( is_int( $va ) && is_int( $vb ) ) {
+				$cmp = $va <=> $vb;
+			} else {
+				$cmp = strcmp( (string) $va, (string) $vb );
+			}
+
+			return 'desc' === $order ? -$cmp : $cmp;
+		}
+	);
+
+	// Get inner blocks structure
+	$inner_blocks_list = array();
+	if ( is_object( $block ) && isset( $block->parsed_block ) && is_array( $block->parsed_block ) ) {
+		if ( isset( $block->parsed_block['innerBlocks'] ) && is_array( $block->parsed_block['innerBlocks'] ) ) {
+			$inner_blocks_list = $block->parsed_block['innerBlocks'];
+		}
+	}
+	if ( empty( $inner_blocks_list ) ) {
+		if ( is_object( $block ) && property_exists( $block, 'innerBlocks' ) && is_array( $block->innerBlocks ) ) {
+			$inner_blocks_list = $block->innerBlocks;
+		} elseif ( is_object( $block ) && property_exists( $block, 'inner_blocks' ) && is_array( $block->inner_blocks ) ) {
+			$inner_blocks_list = $block->inner_blocks;
+		}
+	}
+
+	// Render a section for each meta value with context provided
+	$out = '<div class="apql-filter apql-filter--meta" data-meta-key="' . esc_attr( $meta_key ) . '">';
+
+	foreach ( $groups as $key => $data ) {
+		$value = isset( $data['value'] ) ? (string) $data['value'] : (string) $key;
+		$name  = isset( $data['name'] ) ? (string) $data['name'] : (string) $value;
+
+		$term_obj = array(
+			'slug' => sanitize_title( $value ),
+			'name' => $name,
+			'id'   => 0,
+		);
+
+		$out .= '<section class="apql-filter__group apql-filter__group--meta-' . esc_attr( sanitize_title( $value ) ) . '">';
+
+		if ( ! empty( $inner_blocks_list ) ) {
+			// Render each inner block with updated context
+			foreach ( $inner_blocks_list as $inner_block ) {
+				// Build child context with meta value information
+				$child_context                      = is_array( $block->context ) ? $block->context : array();
+				$child_context['apql/filterTax']    = $meta_key; // Reuse for meta key
+				$child_context['apql/filterTerm']   = $value;
+				$child_context['apql/currentTerm']  = $term_obj;
+
+				// Create WP_Block with updated context
+				if ( $inner_block instanceof WP_Block ) {
+					$parsed_child = ap_qg_block_to_parsed( $inner_block );
+				} elseif ( is_array( $inner_block ) ) {
+					$parsed_child = $inner_block;
+				} else {
+					continue;
+				}
+
+				$child_block = new WP_Block( $parsed_child, $child_context );
+				$out        .= $child_block->render();
+			}
+		} else {
+			// Fallback: show placeholder if no inner blocks
+			$out .= '<div class="apql-filter__empty-placeholder">';
+			$out .= '<h3>' . esc_html( $name ) . '</h3>';
+			$out .= '<p><em>' . esc_html__( 'Add blocks inside "APQL Filter" to compose your layout (e.g., APQL Term Name, APQL Gallery, etc.).', 'apql-gallery' ) . '</em></p>';
+			$out .= '</div>';
+		}
+
+		$out .= '</section>';
+	}
+
+	$out .= '</div>';
+	return $out;
+}
+
+/**
+ * APQL Filter block render: iterates terms/meta values on current page and renders inner blocks per group with proper context.
  *
  * @param array    $attributes Block attributes.
  * @param string   $content    Block inner content (unused).
@@ -132,21 +292,37 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
  * @return string HTML output.
  */
 function apql_filter_render_block( $attributes, $content = '', $block = null ) {
-	$taxonomy = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : '';
+	$group_by   = isset( $attributes['groupBy'] ) && is_string( $attributes['groupBy'] ) ? $attributes['groupBy'] : 'taxonomy';
+	$taxonomy   = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : '';
+	$meta_key   = isset( $attributes['metaKey'] ) && is_string( $attributes['metaKey'] ) ? $attributes['metaKey'] : '';
+	$meta_type  = isset( $attributes['metaType'] ) && is_string( $attributes['metaType'] ) ? $attributes['metaType'] : 'string';
+	$date_format = isset( $attributes['dateFormat'] ) && is_string( $attributes['dateFormat'] ) ? $attributes['dateFormat'] : 'F j, Y';
 
 	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
 	if ( ! $use_context ) {
 		return '<div class="apql-filter"><em>' . esc_html__( 'Place this block inside a Query Loop block.', 'apql-gallery' ) . '</em></div>';
 	}
 
-	// If no taxonomy is selected, prompt the user (editor-friendly message)
-	if ( '' === $taxonomy ) {
-		return '<div class="apql-filter apql-filter--empty"><em>' . esc_html__( 'Select a taxonomy in the block settings.', 'apql-gallery' ) . '</em></div>';
-	}
-
 	global $wp_query;
 	if ( ! ( $wp_query instanceof WP_Query ) || empty( $wp_query->posts ) ) {
 		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No posts found.', 'apql-gallery' ) . '</div>';
+	}
+
+	// Branch based on groupBy mode
+	if ( 'meta' === $group_by ) {
+		return apql_filter_render_meta_groups( $attributes, $content, $block, $wp_query, $meta_key, $meta_type, $date_format );
+	} else {
+		return apql_filter_render_taxonomy_groups( $attributes, $content, $block, $wp_query, $taxonomy );
+	}
+}
+
+/**
+ * Render groups based on taxonomy terms (original behavior).
+ */
+function apql_filter_render_taxonomy_groups( $attributes, $content, $block, $wp_query, $taxonomy ) {
+	// If no taxonomy is selected, prompt the user (editor-friendly message)
+	if ( '' === $taxonomy ) {
+		return '<div class="apql-filter apql-filter--empty"><em>' . esc_html__( 'Select a taxonomy in the block settings.', 'apql-gallery' ) . '</em></div>';
 	}
 
 	if ( ! taxonomy_exists( $taxonomy ) ) {

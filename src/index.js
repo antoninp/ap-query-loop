@@ -58,11 +58,15 @@ registerBlockVariation('core/query', {
 // Register parent block: APQL Filter (with InnerBlocks)
 registerBlockType('apql/filter', {
   title: __('APQL Filter', 'apql-gallery'),
-  description: __('Group current Query posts by a taxonomy. Use InnerBlocks to compose your layout per term.', 'apql-gallery'),
+  description: __('Group current Query posts by a taxonomy or meta field. Use InnerBlocks to compose your layout per term/value.', 'apql-gallery'),
   icon: 'filter',
   category: 'theme',
   attributes: {
+    groupBy: { type: 'string', default: 'taxonomy' },
     taxonomy: { type: 'string', default: '' },
+    metaKey: { type: 'string', default: '' },
+    metaType: { type: 'string', default: 'string' },
+    dateFormat: { type: 'string', default: 'F j, Y' },
     termOrderBy: { type: 'string', default: 'name' },
     termOrder: { type: 'string', default: 'desc' },
   },
@@ -94,39 +98,82 @@ registerBlockType('apql/filter', {
       <>
         <InspectorControls>
           <PanelBody title={ __('Grouping', 'apql-gallery') } initialOpen={ true }>
-            { taxonomyOptions ? (
-              <SelectControl
-                label={ __('Taxonomy', 'apql-gallery') }
-                value={ attributes.taxonomy || '' }
-                options={ taxonomyOptions }
-                onChange={ ( value ) => setAttributes( { taxonomy: value } ) }
-              />
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Spinner />
-                <span>{ __('Loading taxonomies…', 'apql-gallery') }</span>
-              </div>
-            ) }
-            <TextControl
-              label={ __('Custom taxonomy (slug)', 'apql-gallery') }
-              help={ __('Optional: override or type a custom taxonomy slug.', 'apql-gallery') }
-              value={ attributes.taxonomy || '' }
-              onChange={ (value) => setAttributes({ taxonomy: value }) }
-            />
             <SelectControl
-              label={ __('Term Order By', 'apql-gallery') }
+              label={ __('Group By', 'apql-gallery') }
+              value={ attributes.groupBy || 'taxonomy' }
+              options={ [
+                { label: __('Taxonomy', 'apql-gallery'), value: 'taxonomy' },
+                { label: __('Meta Field', 'apql-gallery'), value: 'meta' },
+              ] }
+              onChange={ ( value ) => setAttributes( { groupBy: value } ) }
+            />
+            
+            { attributes.groupBy === 'taxonomy' && (
+              <>
+                { taxonomyOptions ? (
+                  <SelectControl
+                    label={ __('Taxonomy', 'apql-gallery') }
+                    value={ attributes.taxonomy || '' }
+                    options={ taxonomyOptions }
+                    onChange={ ( value ) => setAttributes( { taxonomy: value } ) }
+                  />
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Spinner />
+                    <span>{ __('Loading taxonomies…', 'apql-gallery') }</span>
+                  </div>
+                ) }
+                <TextControl
+                  label={ __('Custom taxonomy (slug)', 'apql-gallery') }
+                  help={ __('Optional: override or type a custom taxonomy slug.', 'apql-gallery') }
+                  value={ attributes.taxonomy || '' }
+                  onChange={ (value) => setAttributes({ taxonomy: value }) }
+                />
+              </>
+            ) }
+            
+            { attributes.groupBy === 'meta' && (
+              <>
+                <TextControl
+                  label={ __('Meta Key', 'apql-gallery') }
+                  help={ __('The post meta key to group by (e.g., aplb_published_date)', 'apql-gallery') }
+                  value={ attributes.metaKey || '' }
+                  onChange={ (value) => setAttributes({ metaKey: value }) }
+                />
+                <SelectControl
+                  label={ __('Meta Type', 'apql-gallery') }
+                  value={ attributes.metaType || 'string' }
+                  options={ [
+                    { label: __('String', 'apql-gallery'), value: 'string' },
+                    { label: __('Date', 'apql-gallery'), value: 'date' },
+                    { label: __('Number', 'apql-gallery'), value: 'number' },
+                  ] }
+                  onChange={ ( value ) => setAttributes( { metaType: value } ) }
+                />
+                { attributes.metaType === 'date' && (
+                  <TextControl
+                    label={ __('Date Format', 'apql-gallery') }
+                    help={ __('PHP date format (e.g., F j, Y for "November 19, 2025")', 'apql-gallery') }
+                    value={ attributes.dateFormat || 'F j, Y' }
+                    onChange={ (value) => setAttributes({ dateFormat: value }) }
+                  />
+                ) }
+              </>
+            ) }
+            
+            <SelectControl
+              label={ __('Order By', 'apql-gallery') }
               value={ attributes.termOrderBy || 'name' }
               options={ [
-                { label: __('Name (A → Z)', 'apql-gallery'), value: 'name' },
+                { label: __('Value (A → Z or date)', 'apql-gallery'), value: 'name' },
                 { label: __('Slug (A → Z)', 'apql-gallery'), value: 'slug' },
                 { label: __('ID (numeric)', 'apql-gallery'), value: 'id' },
                 { label: __('Post Count', 'apql-gallery'), value: 'count' },
-                { label: __('Date from Name', 'apql-gallery'), value: 'date_name' },
               ] }
               onChange={ ( value ) => setAttributes( { termOrderBy: value } ) }
             />
             <SelectControl
-              label={ __('Term Order Direction', 'apql-gallery') }
+              label={ __('Order Direction', 'apql-gallery') }
               value={ attributes.termOrder || 'desc' }
               options={ [
                 { label: __('Ascending', 'apql-gallery'), value: 'asc' },
@@ -139,10 +186,11 @@ registerBlockType('apql/filter', {
         <div { ...blockProps }>
           <div style={{ padding: '1rem', border: '2px dashed #8b5cf6', background: '#faf5ff' }}>
             <p style={{ margin: 0, fontWeight: 600, color: '#7c3aed' }}>
-              🔗 { __('APQL Filter', 'apql-gallery') } ({ attributes.taxonomy })
+              🔗 { __('APQL Filter', 'apql-gallery') } 
+              { attributes.groupBy === 'taxonomy' ? ` (${attributes.taxonomy})` : ` (${attributes.metaKey})` }
             </p>
             <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.85rem', color: '#666' }}>
-              { __('Add blocks below (e.g., APQL Term Name, APQL Gallery) to compose the layout for each term group.', 'apql-gallery') }
+              { __('Add blocks below (e.g., APQL Term Name, APQL Gallery) to compose the layout for each group.', 'apql-gallery') }
             </p>
             <InnerBlocks
               template={ TEMPLATE }

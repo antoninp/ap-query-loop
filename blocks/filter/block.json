@@ -2,7 +2,7 @@
   "apiVersion": 3,
   "name": "apql/filter",
   "title": "APQL Filter",
-  "description": "Group the current Query Loop posts by a taxonomy and render content per term. Use InnerBlocks to compose your layout.",
+  "description": "Group the current Query Loop posts by a taxonomy or meta field and render content per term/value. Use InnerBlocks to compose your layout.",
   "category": "theme",
   "icon": "filter",
   "textdomain": "apql-gallery",
@@ -14,7 +14,11 @@
     "innerBlocks": true
   },
   "attributes": {
+    "groupBy": { "type": "string", "default": "taxonomy" },
     "taxonomy": { "type": "string", "default": "" },
+    "metaKey": { "type": "string", "default": "" },
+    "metaType": { "type": "string", "default": "string" },
+    "dateFormat": { "type": "string", "default": "F j, Y" },
     "termOrderBy": { "type": "string", "default": "name" },
     "termOrder": { "type": "string", "default": "desc" }
   }
