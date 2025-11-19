@@ -1,13 +1,13 @@
 # APQL Gallery
 
-A WordPress Gutenberg block plugin that extends Query Loop with advanced filtering and gallery display capabilities. Group posts by taxonomy terms and display them as galleries with full Meow Gallery integration.
+A WordPress Gutenberg block plugin that extends Query Loop with advanced filtering and gallery display capabilities. Group posts by taxonomy terms or by meta values and display them as galleries with full Meow Gallery integration.
 
 ## Description
 
 This plugin provides a suite of blocks that extend WordPress's core Query Loop functionality:
 
 - **APQL Gallery**: Render queried posts as an image gallery using featured images
-- **APQL Filter**: Group Query Loop posts by taxonomy and render custom layouts per term
+- **APQL Filter**: Group Query Loop posts by taxonomy or meta and render custom layouts per group
 - **APQL Term Name**: Display the current taxonomy term name with customizable styling and linking
 
 Each block integrates seamlessly with the WordPress block editor, providing server-side rendering for accurate previews and full integration with Meow Gallery when installed.
@@ -15,15 +15,16 @@ Each block integrates seamlessly with the WordPress block editor, providing serv
 ## Features
 
 - **APQL Gallery Block**: Context-aware gallery rendering with no additional settings UI
-- **APQL Filter Block**: Group posts by any taxonomy with customizable term ordering
+- **APQL Filter Block**: Group posts by any taxonomy or by a post meta key, with customizable ordering
 - **APQL Term Name Block**: Display term names with prefix/suffix support, optional linking, and full styling controls
 - **Server-Side Rendering**: Preview actual gallery output directly in the editor
 - **Meow Gallery Integration**: Automatically uses Meow Gallery shortcode when available
 - **Graceful Fallback Cascade**: Meow Gallery → modern core gallery HTML → legacy `[gallery]` shortcode
 - **Block Variation**: One-click Query Loop variation includes filter + term name + gallery + no-results + pagination
 - **Advanced Sorting**: Order posts by date, title, author, modified date, menu order, random, comment count, or ID
-- **Term Ordering**: Sort taxonomy terms by name, slug, ID, post count, or date extracted from name
+- **Group Ordering**: Sort taxonomy terms by name, slug, ID, post count, or date extracted from name; when grouping by meta, sort by meta value (string) or by count
 - **Performance**: Efficient query; filters to posts with featured images only
+ - **Archive Compatible**: Works with inherited archive queries (e.g., taxonomy archives) without creating custom queries
 
 ## Requirements
 
@@ -68,15 +69,16 @@ In WordPress, go to Plugins > Add New > Upload Plugin and upload `ap-query-loop.
 
 ### APQL Filter Block
 
-The APQL Filter block groups Query Loop posts by a taxonomy and renders your chosen layout for each term:
+The APQL Filter block groups Query Loop posts by a taxonomy or a meta key and renders your chosen layout for each group:
 
-- **Taxonomy Selection**: Choose from registered taxonomies via dropdown or enter a custom slug
-- **Term Ordering**: Sort terms by name, slug, ID, post count, or date extracted from name
-- **Order Direction**: Ascending or descending (defaults to descending)
-- **Context Provision**: Passes context to child blocks:
-  - `apql/currentTerm`: Current term object (slug, name, id)
-  - `apql/filterTax`: Taxonomy slug
-  - `apql/filterTerm`: Term slug
+- **Grouping Mode**: `taxonomy` (default) or `meta`
+- **Taxonomy Selection** (taxonomy mode): Choose from registered taxonomies via dropdown or enter a custom slug
+- **Meta Selection** (meta mode): Provide `metaKey`; optionally set `metaType` (`string` or `date`) and `dateFormat` (default `F j, Y`)
+- **Ordering**: Sort terms (taxonomy mode) by name, slug, ID, post count, or date extracted from name; sort meta groups by value or count; choose ascending/descending (default descending)
+- **Context Provision**: Passes context to child blocks so they render per-group content:
+  - `apql/currentTerm`: Group descriptor (term object for taxonomy; name/value for meta)
+  - `apql/filterTax`: Taxonomy slug in taxonomy mode; meta key in meta mode
+  - `apql/filterTerm`: Term slug in taxonomy mode; meta value in meta mode
 
 ### APQL Term Name Block
 
@@ -94,8 +96,9 @@ Display the current taxonomy term name with extensive customization:
 Context-aware gallery rendering with no additional settings:
 
 - Automatically displays featured images from Query Loop posts
-- Respects parent filter context when inside APQL Filter
+- Respects parent filter context when inside APQL Filter (taxonomy-or-meta aware)
 - Falls back gracefully when Meow Gallery is not available
+ - Uses the inherited Query Loop (no custom queries) and therefore works seamlessly on archive templates
 
 ### Post Ordering
 
@@ -159,7 +162,7 @@ ap-query-loop/
 
 1. **Context Consumption**: Declares `usesContext` for `query`, `queryId`, `apql/filterTax`, and `apql/filterTerm`; must reside under `core/query` or `apql/filter`.
 2. **Single Query Pass**: Server render reuses the global `$wp_query` already executed by parent Query Loop block.
-3. **Featured Image Filter**: Collects only posts with a valid featured image; respects filter context when inside APQL Filter.
+3. **Featured Image Filter**: Collects only posts with a valid featured image; respects filter context when inside APQL Filter. If `apql/filterTax` is a registered taxonomy, filter by term; otherwise treat it as a meta key and filter by exact meta value equality.
 4. **Rendering Cascade**:
    - Meow Gallery shortcode if available
    - Modern gallery HTML (`wp-block-gallery` + nested `wp-block-image`)
@@ -168,10 +171,10 @@ ap-query-loop/
 
 ### APQL Filter
 
-1. **Taxonomy Grouping**: Queries all terms from the selected taxonomy that have posts in the current Query Loop.
-2. **Term Ordering**: Sorts terms based on `termOrderBy` (name/slug/id/count/date_name) and `termOrder` (asc/desc).
-3. **Date Extraction**: When using `date_name` ordering, extracts dates from term names (supports formats like "YYYY", "YYYY-MM", "Month YYYY").
-4. **Context Injection**: For each term, temporarily sets context and renders child InnerBlocks with term-specific data.
+1. **Grouping Modes**: `taxonomy` mode groups by terms; `meta` mode groups by meta values from the current page's posts.
+2. **Ordering**: For taxonomy, sort by name/slug/id/count/date_name; for meta, sort by value (string) or by count.
+3. **Date Presentation (meta mode)**: When `metaType` is `date`, values are formatted using `dateFormat` for headings while preserving raw value for filtering.
+4. **Context Injection**: For each group, sets context and renders child InnerBlocks with group-specific data.
 5. **InnerBlocks Serialization**: Saves child blocks to post content for server-side rendering with injected context.
 
 ### APQL Term Name

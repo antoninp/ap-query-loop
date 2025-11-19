@@ -1,7 +1,10 @@
 {
-  "version": "0.2.2",
-  "summary": "Release scripts fix",
+  "version": "0.2.3",
+  "summary": "Meta grouping and gallery meta-aware filtering",
   "changes": [
-    "Fixed README.txt not committed after release script execution"
+    "APQL Filter: added groupBy=meta mode with metaKey, metaType (string|date) and dateFormat options",
+    "APQL Gallery: respects taxonomy-or-meta context; filters by exact meta value when grouping by meta",
+    "Improved archive compatibility by reusing inherited Query Loop (no custom queries)",
+    "Documentation updated to reflect meta grouping and taxonomy-or-meta aware behavior"
   ]
 }
