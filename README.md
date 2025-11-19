@@ -205,6 +205,12 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.3 - Meta grouping and gallery meta-aware filtering
+- APQL Filter: added groupBy=meta mode with metaKey, metaType (string|date) and dateFormat options
+- APQL Gallery: respects taxonomy-or-meta context; filters by exact meta value when grouping by meta
+- Improved archive compatibility by reusing inherited Query Loop (no custom queries)
+- Documentation updated to reflect meta grouping and taxonomy-or-meta aware behavior
+
 ### 0.2.2 - Release scripts fix
 - Fixed README.txt not committed after release script execution
 
