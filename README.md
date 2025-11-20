@@ -205,6 +205,9 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.5 - Release script fix
+- Fixed readme.txt changelog not updated by release script
+
 ### 0.2.4 - Code cleanup
 - Removed unnecessary WordPress function stubs added for local development lint errors
 - Retained essential helper functions for block rendering (ap_qg_block_to_parsed, ap_render_blocks_with_context)

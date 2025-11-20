@@ -4,7 +4,7 @@ Tags: query loop, gallery, taxonomy, block, gutenberg, meow gallery
 Requires at least: 6.5
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 0.2.4
+Stable tag: 0.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -96,6 +96,9 @@ Pagination is handled by core pagination blocks; APQL Gallery doesn’t output p
 Yes. Set APQL Filter’s grouping mode to Meta and enter the meta key. If the value is a date string (e.g., `YYYY-MM-DD`), set type to "date" to control the display format while filtering by the exact raw value.
 
 == Changelog ==
+
+= 0.2.5 - Release script fix =
+- Fixed readme.txt changelog not updated by release script
 
 = 0.2.4 - Code cleanup =
 - Removed unnecessary WordPress function stubs added for local development lint errors
