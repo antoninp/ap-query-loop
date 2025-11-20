@@ -205,6 +205,10 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.4 - Code cleanup
+- Removed unnecessary WordPress function stubs added for local development lint errors
+- Retained essential helper functions for block rendering (ap_qg_block_to_parsed, ap_render_blocks_with_context)
+
 ### 0.2.3 - Meta grouping and gallery meta-aware filtering
 - APQL Filter: added groupBy=meta mode with metaKey, metaType (string|date) and dateFormat options
 - APQL Gallery: respects taxonomy-or-meta context; filters by exact meta value when grouping by meta
