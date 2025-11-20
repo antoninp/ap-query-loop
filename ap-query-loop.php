@@ -13,6 +13,92 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
+/**
+ * Helper: convert a WP_Block instance (or nested) into a parsed block array structure.
+ *
+ * @param mixed $blk WP_Block instance or array.
+ * @return array Parsed block array.
+ */
+function ap_qg_block_to_parsed( $blk ) {
+	if ( is_array( $blk ) ) {
+		// Assume already parsed
+		return $blk;
+	}
+	if ( $blk instanceof WP_Block ) {
+		$inner_parsed = array();
+		if ( property_exists( $blk, 'innerBlocks' ) && is_array( $blk->innerBlocks ) ) {
+			foreach ( $blk->innerBlocks as $ib ) {
+				$inner_parsed[] = ap_qg_block_to_parsed( $ib );
+			}
+		} elseif ( property_exists( $blk, 'inner_blocks' ) && is_array( $blk->inner_blocks ) ) {
+			foreach ( $blk->inner_blocks as $ib ) {
+				$inner_parsed[] = ap_qg_block_to_parsed( $ib );
+			}
+		}
+		$attrs = array();
+		if ( property_exists( $blk, 'attributes' ) && is_array( $blk->attributes ) ) {
+			$attrs = $blk->attributes;
+		}
+		$name = ( property_exists( $blk, 'name' ) ) ? (string) $blk->name : '';
+
+		// Capture saved HTML and inner content so static (save) blocks render
+		$innerHTML = '';
+		if ( property_exists( $blk, 'innerHTML' ) ) {
+			$innerHTML = (string) $blk->innerHTML;
+		} elseif ( property_exists( $blk, 'inner_html' ) ) {
+			$innerHTML = (string) $blk->inner_html;
+		}
+		if ( property_exists( $blk, 'inner_content' ) && is_array( $blk->inner_content ) ) {
+			$innerHTML = implode( '', $blk->inner_content );
+		}
+		$innerContent = array();
+		if ( property_exists( $blk, 'inner_content' ) && is_array( $blk->inner_content ) ) {
+			$innerContent = $blk->inner_content;
+		}
+		return array(
+			'blockName'    => $name,
+			'attrs'        => $attrs,
+			'innerBlocks'  => $inner_parsed,
+			'innerHTML'    => $innerHTML,
+			'innerContent' => $innerContent,
+		);
+	}
+	return array();
+}
+
+/**
+ * Helper: render parsed blocks with proper context (recursively handles innerBlocks).
+ *
+ * @param array $parsed_blocks Array of parsed blocks.
+ * @param array $context Block context.
+ * @return string Rendered HTML.
+ */
+function ap_render_blocks_with_context( $parsed_blocks, $context ) {
+	$output = '';
+	
+	if ( ! is_array( $parsed_blocks ) ) {
+		return $output;
+	}
+	
+	foreach ( $parsed_blocks as $parsed_block ) {
+		if ( ! is_array( $parsed_block ) ) {
+			continue;
+		}
+		
+		// Handle plain HTML content (no blockName)
+		if ( empty( $parsed_block['blockName'] ) ) {
+			$output .= isset( $parsed_block['innerHTML'] ) ? $parsed_block['innerHTML'] : '';
+			continue;
+		}
+		
+		// Create WP_Block with the provided context
+		$block_instance = new WP_Block( $parsed_block, $context );
+		$output .= $block_instance->render();
+	}
+	
+	return $output;
+}
+
 // Load text domain
 add_action( 'init', function() {
 	load_plugin_textdomain( 'apql-gallery', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
