@@ -168,12 +168,34 @@ if(versionHeadingRe.test(readme)){
 // 4. Update WordPress.org README.txt Stable tag (always)
 if(fs.existsSync(README_TXT)){
   let txt = fs.readFileSync(README_TXT,'utf8');
+  
+  // Update Stable tag
   if(/(^Stable tag:\s*).*$/im.test(txt)){
     txt = txt.replace(/(^Stable tag:\s*).*$/im, `$1${version}`);
   } else {
     // Insert near top
     txt = `Stable tag: ${version}\n` + txt;
   }
+  
+  // Prepend changelog entry (WordPress.org style with = headers)
+  const changelogHeaderRe = /(^==\s+Changelog\s*==\s*$)/im;
+  if(changelogHeaderRe.test(txt)){
+    // Check if version already exists to avoid duplicates
+    const versionEntryRe = new RegExp(`^=\\s+${version}\\b`, 'm');
+    if(!versionEntryRe.test(txt)){
+      // Build WordPress.org style entry
+      const headingLine = `= ${version} - ${summary || date} =`;
+      const bullets = changes.map(c => `- ${c.replace(/\n+/g,' ').trim()}`).join('\n');
+      const entry = `\n${headingLine}\n${bullets}\n`;
+      txt = txt.replace(changelogHeaderRe, (match) => match + entry);
+      console.log('✅ Prepended changelog entry to README.txt');
+    } else {
+      console.log(`ℹ️ README.txt changelog already contains entry for ${version}; skipping prepend.`);
+    }
+  } else {
+    console.log('⚠️ README.txt has no Changelog section; skipping changelog prepend');
+  }
+  
   if(!DRY_RUN){ fs.writeFileSync(README_TXT, txt, 'utf8'); }
   console.log('✅ Updated README.txt Stable tag');
 } else {

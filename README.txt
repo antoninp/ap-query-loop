@@ -97,6 +97,16 @@ Yes. Set APQL Filter’s grouping mode to Meta and enter the meta key. If the va
 
 == Changelog ==
 
+= 0.2.4 - Code cleanup =
+- Removed unnecessary WordPress function stubs added for local development lint errors
+- Updated ensured essential helper rendering helpers remain (ap_qg_block_to_parsed, ap_render_blocks_with_context)
+
+= 0.2.3 - Meta grouping and gallery meta-aware filtering =
+- Added APQL Filter groupBy=meta mode with metaKey, metaType (string|date) and dateFormat options
+- Updated APQL Gallery now respects taxonomy-or-meta context and filters by exact meta value when grouping by meta
+- Updated archive compatibility by reusing inherited Query Loop (no custom queries)
+- Updated documentation to reflect meta grouping and taxonomy-or-meta aware behavior
+
 = 0.2.2 - Release scripts fix =
 - Fixed README.txt not committed after release script execution
 
