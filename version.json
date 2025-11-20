@@ -1,8 +1,7 @@
 {
-  "version": "0.2.4",
-  "summary": "Code cleanup",
+  "version": "0.2.5",
+  "summary": "Release script fix",
   "changes": [
-    "Removed unnecessary WordPress function stubs added for local development lint errors",
-    "Retained essential helper functions for block rendering (ap_qg_block_to_parsed, ap_render_blocks_with_context)"
+    "Fixed readme.txt changelog not updated by release script"
   ]
 }
