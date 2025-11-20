@@ -1,10 +1,8 @@
 {
-  "version": "0.2.3",
-  "summary": "Meta grouping and gallery meta-aware filtering",
+  "version": "0.2.4",
+  "summary": "Code cleanup",
   "changes": [
-    "APQL Filter: added groupBy=meta mode with metaKey, metaType (string|date) and dateFormat options",
-    "APQL Gallery: respects taxonomy-or-meta context; filters by exact meta value when grouping by meta",
-    "Improved archive compatibility by reusing inherited Query Loop (no custom queries)",
-    "Documentation updated to reflect meta grouping and taxonomy-or-meta aware behavior"
+    "Removed unnecessary WordPress function stubs added for local development lint errors",
+    "Retained essential helper functions for block rendering (ap_qg_block_to_parsed, ap_render_blocks_with_context)"
   ]
 }
