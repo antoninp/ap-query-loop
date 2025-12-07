@@ -777,8 +777,17 @@ function apql_term_name_render_block( $attributes, $content = '', $block = null 
 
 	// Build the term link if needed
 	$term_link = '';
-	if ( $is_link && $term_id && $taxonomy && function_exists( 'get_term_link' ) ) {
-		$term_link = get_term_link( $term_id, $taxonomy );
+	if ( $is_link && $taxonomy && function_exists( 'get_term_link' ) ) {
+		// Prefer the ID when present; otherwise resolve by slug.
+		if ( $term_id ) {
+			$term_link = get_term_link( $term_id, $taxonomy );
+		} elseif ( $slug ) {
+			$maybe_term = get_term_by( 'slug', $slug, $taxonomy );
+			if ( $maybe_term && ! is_wp_error( $maybe_term ) && isset( $maybe_term->term_id ) ) {
+				$term_link = get_term_link( $maybe_term->term_id, $taxonomy );
+			}
+		}
+
 		if ( is_wp_error( $term_link ) ) {
 			$term_link = '';
 		}
