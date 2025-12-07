@@ -6,7 +6,7 @@
   "category": "theme",
   "icon": "images-alt2",
   "textdomain": "apql-gallery",
-  "parent": ["core/query", "apql/filter"],
+  "ancestor": ["core/query"],
   "usesContext": ["query", "queryId", "apql/filterTax", "apql/filterTerm"],
   "supports": { "html": false },
   "attributes": {},

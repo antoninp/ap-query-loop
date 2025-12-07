@@ -137,8 +137,10 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
  * Helper: Render groups based on meta field values (new behavior for meta grouping).
  */
 function apql_filter_render_meta_groups( $attributes, $content, $block, $wp_query, $meta_key, $meta_type, $date_format ) {
+	// If no meta key is selected, this should have been caught by pass-through mode
+	// but keep this check for backward compatibility
 	if ( '' === $meta_key ) {
-		return '<div class="apql-filter apql-filter--empty"><em>' . esc_html__( 'Select a meta key in the block settings.', 'apql-gallery' ) . '</em></div>';
+		return apql_filter_render_passthrough( $attributes, $content, $block );
 	}
 
 	// Collect all meta values from current page posts
@@ -308,6 +310,12 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No posts found.', 'apql-gallery' ) . '</div>';
 	}
 
+	// Pass-through mode: if no taxonomy or meta key is selected, just render inner blocks without grouping
+	$is_passthrough = ( 'taxonomy' === $group_by && '' === $taxonomy ) || ( 'meta' === $group_by && '' === $meta_key );
+	if ( $is_passthrough ) {
+		return apql_filter_render_passthrough( $attributes, $content, $block );
+	}
+
 	// Branch based on groupBy mode
 	if ( 'meta' === $group_by ) {
 		return apql_filter_render_meta_groups( $attributes, $content, $block, $wp_query, $meta_key, $meta_type, $date_format );
@@ -317,12 +325,69 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 }
 
 /**
+ * Render pass-through mode: just render inner blocks without filtering/grouping.
+ */
+function apql_filter_render_passthrough( $attributes, $content, $block ) {
+	// Get inner blocks structure
+	$inner_blocks_list = array();
+
+	// First try parsed_block (this is where WordPress stores the structure)
+	if ( is_object( $block ) && isset( $block->parsed_block ) && is_array( $block->parsed_block ) ) {
+		if ( isset( $block->parsed_block['innerBlocks'] ) && is_array( $block->parsed_block['innerBlocks'] ) ) {
+			$inner_blocks_list = $block->parsed_block['innerBlocks'];
+		}
+	}
+
+	// Fallback: try direct properties (for compatibility)
+	if ( empty( $inner_blocks_list ) ) {
+		if ( is_object( $block ) && property_exists( $block, 'innerBlocks' ) && is_array( $block->innerBlocks ) ) {
+			$inner_blocks_list = $block->innerBlocks;
+		} elseif ( is_object( $block ) && property_exists( $block, 'inner_blocks' ) && is_array( $block->inner_blocks ) ) {
+			$inner_blocks_list = $block->inner_blocks;
+		}
+	}
+
+	$out = '<div class="apql-filter apql-filter--passthrough">';
+
+	if ( ! empty( $inner_blocks_list ) ) {
+		// Render each inner block with current context (no filtering)
+		foreach ( $inner_blocks_list as $inner_block ) {
+			// Pass through the current context without modification
+			$child_context = is_array( $block->context ) ? $block->context : array();
+
+			// If inner_block is already a WP_Block instance, convert to parsed
+			// If it's an array (from parsed_block), use it directly
+			if ( $inner_block instanceof WP_Block ) {
+				$parsed_child = ap_qg_block_to_parsed( $inner_block );
+			} elseif ( is_array( $inner_block ) ) {
+				$parsed_child = $inner_block;
+			} else {
+				continue; // Skip invalid blocks
+			}
+
+			// Create new WP_Block with current context
+			$child_block = new WP_Block( $parsed_child, $child_context );
+			$out        .= $child_block->render();
+		}
+	} else {
+		// Fallback: show placeholder if no inner blocks
+		$out .= '<div class="apql-filter__empty-placeholder">';
+		$out .= '<p><em>' . esc_html__( 'Add blocks inside "APQL Filter" to compose your layout (e.g., APQL Gallery, etc.). Configure taxonomy or meta field in settings to enable grouping.', 'apql-gallery' ) . '</em></p>';
+		$out .= '</div>';
+	}
+
+	$out .= '</div>';
+	return $out;
+}
+
+/**
  * Render groups based on taxonomy terms (original behavior).
  */
 function apql_filter_render_taxonomy_groups( $attributes, $content, $block, $wp_query, $taxonomy ) {
-	// If no taxonomy is selected, prompt the user (editor-friendly message)
+	// If no taxonomy is selected, this should have been caught by pass-through mode
+	// but keep this check for backward compatibility
 	if ( '' === $taxonomy ) {
-		return '<div class="apql-filter apql-filter--empty"><em>' . esc_html__( 'Select a taxonomy in the block settings.', 'apql-gallery' ) . '</em></div>';
+		return apql_filter_render_passthrough( $attributes, $content, $block );
 	}
 
 	if ( ! taxonomy_exists( $taxonomy ) ) {
