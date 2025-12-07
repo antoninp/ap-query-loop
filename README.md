@@ -222,6 +222,20 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.6 - WordPress 6.9 compatibility and feature enhancements
+- Updated WordPress compatibility to 6.9
+- Added attribute to control Meow Gallery options in APQL Gallery block
+- Added HTML tag option and orientation setting for Term Name block
+- Added filtering by standard WordPress date (post_date and post_modified)
+- Fixed: Term link ('Make term a link') not working properly
+- Fixed: APQL Gallery not usable outside of APQL Filter - added passthrough mode
+- Removed unnecessary APQL preview in editor
+- Removed redundant 'no post found' message (handled by WP No Results block)
+- Updated documentation: Added detailed gallery options (layout, columns, gutter, animations, captions, etc.)
+- Updated documentation: Documented HTML tag selection for Term Name block
+- Updated documentation: Documented date field filtering mode in APQL Filter
+- Updated documentation: Clarified standalone usage capability for APQL Gallery
+
 ### 0.2.5 - Release script fix
 - Fixed readme.txt changelog not updated by release script
 
