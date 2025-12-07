@@ -24,9 +24,11 @@ Features:
 
 - Context-only design; uses `core/query` settings (post type, filters, pagination).
 - Server-side rendering for accurate editor previews.
-- Meow Gallery integration with graceful fallback to core gallery HTML and legacy `[gallery]` shortcode.
+- Meow Gallery integration with full control over gallery options (layout, columns, gutter, animations, captions, etc.).
+- Graceful fallback to core gallery HTML and legacy `[gallery]` shortcode when Meow Gallery is not available.
 - One-click Query Loop variation that composes Filter + Term Name + Gallery + No Results + Pagination.
-- Advanced ordering: post order (date, title, author, modified, menu order, random, comment count, ID) and group order (for taxonomy: name, slug, ID, count, date from name; for meta: value or count).
+- Advanced ordering: post order (date, title, author, modified, menu order, random, comment count, ID) and group order (for taxonomy: name, slug, ID, count, date from name; for meta: value or count; for dates: chronological).
+- Flexible grouping: by taxonomy, by post meta, or by WordPress date fields (post_date, post_modified).
 - Archive compatible: works with inherited archive queries without creating custom queries.
 
 Requirements:
@@ -68,32 +70,39 @@ Notes:
 
 1. `apql/gallery` — APQL Gallery
    - Renders featured images from the current Query Loop posts; respects APQL Filter context if present.
+   - Full Meow Gallery options control: layout (tiles, masonry, justified, square, cascade), columns, gutter, row height, image size, animations, captions, link behavior, custom CSS class, and alignment.
    - Meow Gallery shortcode when available; otherwise modern core gallery HTML or legacy `[gallery]` fallback.
-   - Taxonomy-or-meta aware: when inside APQL Filter, filters by term (taxonomy mode) or by exact meta value equality (meta mode).
+   - Works standalone or inside APQL Filter with automatic passthrough mode.
+   - Taxonomy-or-meta-or-date aware: when inside APQL Filter, filters by term (taxonomy mode), by exact meta value equality (meta mode), or by date (date mode).
 
 2. `apql/filter` — APQL Filter
-   - Groups current Query Loop posts by a chosen taxonomy or by a meta key.
+   - Groups current Query Loop posts by a chosen taxonomy, by a meta key, or by WordPress date fields.
    - Provides InnerBlocks to compose your per-group layout (e.g., Term Name + Gallery).
    - Taxonomy mode ordering: name, slug, ID, post count, or date extracted from term name.
    - Meta mode options: `metaKey`, optional `metaType` (`string` or `date`) and `dateFormat` for display.
+   - Date mode: Filter by standard WordPress date fields (`post_date` or `post_modified`) with automatic date grouping.
 
 3. `apql/term-name` — APQL Term Name
    - Displays current term name with optional link to term archive.
-   - Supports prefix/suffix, text alignment, typography, colors, and spacing controls.
+   - HTML tag selection: Choose between H2 (default), H3, or H4 for semantic heading structure.
+   - Supports prefix/suffix, text alignment, typography (including writing mode/orientation), colors, and spacing controls.
 
 == Frequently Asked Questions ==
 
 = Does it work without Meow Gallery? =
 Yes. The block falls back to core gallery HTML and as a tertiary fallback to the legacy `[gallery]` shortcode.
 
-= Does APQL Gallery work outside Query Loop? =
-It’s designed to consume context from `core/query` and should be used inside a Query Loop for correct results.
+= Does APQL Gallery work outside APQL Filter? =
+Yes! APQL Gallery can work standalone inside Query Loop or within APQL Filter. When used outside APQL Filter, it displays all posts from the query. When inside APQL Filter, it automatically filters by the current group (term, meta value, or date).
 
 = How is pagination handled? =
 Pagination is handled by core pagination blocks; APQL Gallery doesn’t output pagination markup itself.
 
-= Can I group by post meta, like a date field? =
-Yes. Set APQL Filter’s grouping mode to Meta and enter the meta key. If the value is a date string (e.g., `YYYY-MM-DD`), set type to "date" to control the display format while filtering by the exact raw value.
+= Can I group by post meta or date fields? =
+Yes. APQL Filter supports three grouping modes:
+- **Taxonomy**: Group by any taxonomy (category, tag, custom taxonomies).
+- **Meta**: Group by custom field values. If the value is a date string (e.g., `YYYY-MM-DD`), set type to "date" to control the display format.
+- **Date**: Group by standard WordPress date fields (`post_date` for published date or `post_modified` for last modified date).
 
 == Changelog ==
 

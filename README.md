@@ -14,17 +14,19 @@ Each block integrates seamlessly with the WordPress block editor, providing serv
 
 ## Features
 
-- **APQL Gallery Block**: Context-aware gallery rendering with no additional settings UI
-- **APQL Filter Block**: Group posts by any taxonomy or by a post meta key, with customizable ordering
-- **APQL Term Name Block**: Display term names with prefix/suffix support, optional linking, and full styling controls
+- **APQL Gallery Block**: Context-aware gallery rendering with full Meow Gallery options control
+- **Gallery Options**: Customize layout (tiles, masonry, justified, square, cascade), columns, gutter, row height, animations, captions, link behavior, custom CSS, and alignment
+- **APQL Filter Block**: Group posts by taxonomy, post meta, or WordPress date fields (`post_date`, `post_modified`)
+- **APQL Term Name Block**: Display term names with HTML tag selection (H2/H3/H4), prefix/suffix, optional linking, and full styling controls including writing mode
 - **Server-Side Rendering**: Preview actual gallery output directly in the editor
-- **Meow Gallery Integration**: Automatically uses Meow Gallery shortcode when available
+- **Meow Gallery Integration**: Automatically uses Meow Gallery shortcode when available with full control over all gallery options
 - **Graceful Fallback Cascade**: Meow Gallery → modern core gallery HTML → legacy `[gallery]` shortcode
+- **Standalone or Filtered**: APQL Gallery works independently or within APQL Filter with automatic passthrough mode
 - **Block Variation**: One-click Query Loop variation includes filter + term name + gallery + no-results + pagination
 - **Advanced Sorting**: Order posts by date, title, author, modified date, menu order, random, comment count, or ID
-- **Group Ordering**: Sort taxonomy terms by name, slug, ID, post count, or date extracted from name; when grouping by meta, sort by meta value (string) or by count
+- **Group Ordering**: Sort taxonomy terms by name, slug, ID, post count, or date extracted from name; when grouping by meta, sort by meta value (string) or by count; date groups sort chronologically
 - **Performance**: Efficient query; filters to posts with featured images only
- - **Archive Compatible**: Works with inherited archive queries (e.g., taxonomy archives) without creating custom queries
+- **Archive Compatible**: Works with inherited archive queries (e.g., taxonomy archives) without creating custom queries
 
 ## Requirements
 
@@ -69,36 +71,50 @@ In WordPress, go to Plugins > Add New > Upload Plugin and upload `ap-query-loop.
 
 ### APQL Filter Block
 
-The APQL Filter block groups Query Loop posts by a taxonomy or a meta key and renders your chosen layout for each group:
+The APQL Filter block groups Query Loop posts by a taxonomy, a meta key, or WordPress date fields and renders your chosen layout for each group:
 
-- **Grouping Mode**: `taxonomy` (default) or `meta`
+- **Grouping Mode**: `taxonomy` (default), `meta`, or `date`
 - **Taxonomy Selection** (taxonomy mode): Choose from registered taxonomies via dropdown or enter a custom slug
 - **Meta Selection** (meta mode): Provide `metaKey`; optionally set `metaType` (`string` or `date`) and `dateFormat` (default `F j, Y`)
-- **Ordering**: Sort terms (taxonomy mode) by name, slug, ID, post count, or date extracted from name; sort meta groups by value or count; choose ascending/descending (default descending)
+- **Date Selection** (date mode): Choose `post_date` (published date) or `post_modified` (last modified date); posts are automatically grouped by date with chronological ordering
+- **Ordering**: Sort terms (taxonomy mode) by name, slug, ID, post count, or date extracted from name; sort meta groups by value or count; date groups sort chronologically; choose ascending/descending (default descending)
 - **Context Provision**: Passes context to child blocks so they render per-group content:
-  - `apql/currentTerm`: Group descriptor (term object for taxonomy; name/value for meta)
-  - `apql/filterTax`: Taxonomy slug in taxonomy mode; meta key in meta mode
-  - `apql/filterTerm`: Term slug in taxonomy mode; meta value in meta mode
+  - `apql/currentTerm`: Group descriptor (term object for taxonomy; name/value for meta; date string for date mode)
+  - `apql/filterTax`: Taxonomy slug in taxonomy mode; meta key in meta mode; date field name in date mode (`post_date` or `post_modified`)
+  - `apql/filterTerm`: Term slug in taxonomy mode; meta value in meta mode; formatted date value in date mode
 
 ### APQL Term Name Block
 
 Display the current taxonomy term name with extensive customization:
 
+- **HTML Tag**: Choose semantic heading level (H2, H3, or H4) with H2 as default
 - **Text Alignment**: Left, center, right alignment controls
 - **Prefix/Suffix**: Add custom text before or after the term name
 - **Linking**: Optionally link to term archive page
-- **Typography**: Full font family, size, weight, style, transform, decoration, letter spacing controls
+- **Typography**: Full font family, size, weight, style, transform, decoration, letter spacing, and writing mode (orientation) controls
 - **Colors**: Text, background, and link color with gradient support
 - **Spacing**: Margin and padding controls
 
 ### APQL Gallery Block
 
-Context-aware gallery rendering with no additional settings:
+Context-aware gallery rendering with full Meow Gallery options control:
 
 - Automatically displays featured images from Query Loop posts
-- Respects parent filter context when inside APQL Filter (taxonomy-or-meta aware)
-- Falls back gracefully when Meow Gallery is not available
- - Uses the inherited Query Loop (no custom queries) and therefore works seamlessly on archive templates
+- Works standalone inside Query Loop or within APQL Filter with automatic passthrough mode
+- Respects parent filter context when inside APQL Filter (taxonomy-or-meta-or-date aware)
+- **Gallery Options** (when Meow Gallery is active):
+  - **Layout**: Tiles, Masonry, Justified, Square Grid, or Cascade
+  - **Columns**: 0-6 columns (0 = auto, not available for Cascade layout)
+  - **Gutter**: Spacing between images (0-50px)
+  - **Row Height**: For justified layout (configurable in pixels)
+  - **Image Size**: Thumbnail, Medium, Large, or Full Size
+  - **Animation**: None, Zoom In, Zoom Out, Fade In, Fade Out, or Colorize
+  - **Captions**: Attachment Title, Attachment Caption, or Image Description
+  - **Image Link**: Link to Attachment Page, Media File, or None
+  - **Custom CSS Class**: Add custom classes for styling
+  - **Alignment**: Left, Center, Right, Wide, or Full Width
+- Falls back gracefully when Meow Gallery is not available (core gallery HTML or legacy `[gallery]` shortcode)
+- Uses the inherited Query Loop (no custom queries) and therefore works seamlessly on archive templates
 
 ### Post Ordering
 
@@ -160,20 +176,21 @@ ap-query-loop/
 
 ### APQL Gallery
 
-1. **Context Consumption**: Declares `usesContext` for `query`, `queryId`, `apql/filterTax`, and `apql/filterTerm`; must reside under `core/query` or `apql/filter`.
+1. **Context Consumption**: Declares `usesContext` for `query`, `queryId`, `apql/filterTax`, and `apql/filterTerm`; must reside under `core/query` (can be used with or without `apql/filter`).
 2. **Single Query Pass**: Server render reuses the global `$wp_query` already executed by parent Query Loop block.
-3. **Featured Image Filter**: Collects only posts with a valid featured image; respects filter context when inside APQL Filter. If `apql/filterTax` is a registered taxonomy, filter by term; otherwise treat it as a meta key and filter by exact meta value equality.
-4. **Rendering Cascade**:
-   - Meow Gallery shortcode if available
+3. **Featured Image Filter**: Collects only posts with a valid featured image; respects filter context when inside APQL Filter. If `apql/filterTax` is a registered taxonomy, filter by term; if it's a WordPress date field (`post_date` or `post_modified`), filter by date; otherwise treat it as a meta key and filter by exact meta value equality.
+4. **Gallery Options**: When Meow Gallery is active, passes configured attributes (layout, columns, gutter, rowHeight, size, animation, captions, link, customClass, align) directly to the Meow Gallery shortcode for full control.
+5. **Rendering Cascade**:
+   - Meow Gallery shortcode with configured options if available
    - Modern gallery HTML (`wp-block-gallery` + nested `wp-block-image`)
    - Legacy `[gallery ids="..."]` shortcode as tertiary fallback
-5. **Pagination**: Delegated entirely to sibling core pagination blocks.
+6. **Pagination**: Delegated entirely to sibling core pagination blocks.
 
 ### APQL Filter
 
-1. **Grouping Modes**: `taxonomy` mode groups by terms; `meta` mode groups by meta values from the current page's posts.
-2. **Ordering**: For taxonomy, sort by name/slug/id/count/date_name; for meta, sort by value (string) or by count.
-3. **Date Presentation (meta mode)**: When `metaType` is `date`, values are formatted using `dateFormat` for headings while preserving raw value for filtering.
+1. **Grouping Modes**: `taxonomy` mode groups by terms; `meta` mode groups by meta values from the current page's posts; `date` mode groups by WordPress date fields (`post_date` or `post_modified`).
+2. **Ordering**: For taxonomy, sort by name/slug/id/count/date_name; for meta, sort by value (string) or by count; for date, sort chronologically.
+3. **Date Presentation**: In meta mode when `metaType` is `date`, values are formatted using `dateFormat` for headings while preserving raw value for filtering. In date mode, posts are automatically grouped by date (YYYY-MM-DD format) from the selected date field.
 4. **Context Injection**: For each group, sets context and renders child InnerBlocks with group-specific data.
 5. **InnerBlocks Serialization**: Saves child blocks to post content for server-side rendering with injected context.
 
