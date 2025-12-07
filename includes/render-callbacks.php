@@ -197,7 +197,7 @@ function apql_filter_render_meta_groups( $attributes, $content, $block, $wp_quer
 	}
 
 	if ( empty( $groups ) ) {
-		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No matching meta values for current posts.', 'apql-gallery' ) . '</div>';
+		return '';
 	}
 
 	// Sort groups
@@ -322,7 +322,7 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 
 	global $wp_query;
 	if ( ! ( $wp_query instanceof WP_Query ) || empty( $wp_query->posts ) ) {
-		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No posts found.', 'apql-gallery' ) . '</div>';
+		return '';
 	}
 
 	// Pass-through mode: if no taxonomy or meta key is selected, just render inner blocks without grouping
@@ -389,7 +389,7 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 	}
 
 	if ( empty( $groups ) ) {
-		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No posts found.', 'apql-gallery' ) . '</div>';
+		return '';
 	}
 
 	// Sort groups
@@ -593,7 +593,7 @@ function apql_filter_render_taxonomy_groups( $attributes, $content, $block, $wp_
 	}
 
 	if ( empty( $groups ) ) {
-		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No matching terms for current posts.', 'apql-gallery' ) . '</div>';
+		return '';
 	}
 
 	// Sort groups based on attributes
