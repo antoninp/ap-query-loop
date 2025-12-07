@@ -138,7 +138,7 @@ registerBlockType('apql/filter', {
               <>
                 <TextControl
                   label={ __('Meta Key', 'apql-gallery') }
-                  help={ __('The post meta key to group by (e.g., aplb_published_date)', 'apql-gallery') }
+                  help={ __('The post meta key to group by', 'apql-gallery') }
                   value={ attributes.metaKey || '' }
                   onChange={ (value) => setAttributes({ metaKey: value }) }
                 />
