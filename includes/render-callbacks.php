@@ -47,7 +47,7 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
 			continue;
 		}
 		if ( $filter_tax && $filter_term ) {
-			// Check if filter is taxonomy or meta field
+			// Check if filter is taxonomy, meta field, or date field
 			if ( taxonomy_exists( $filter_tax ) ) {
 				// Taxonomy filtering
 				$terms = get_the_terms( $post_id, $filter_tax );
@@ -61,6 +61,20 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
 					$terms
 				);
 				if ( ! in_array( $filter_term, $slugs, true ) ) {
+					continue;
+				}
+			} elseif ( in_array( $filter_tax, array( 'post_date', 'post_modified' ), true ) ) {
+				// Date field filtering
+				$date_value = isset( $post->$filter_tax ) ? $post->$filter_tax : '';
+				if ( ! $date_value ) {
+					continue;
+				}
+				$timestamp = strtotime( $date_value );
+				if ( ! $timestamp ) {
+					continue;
+				}
+				$post_date_key = date( 'Y-m-d', $timestamp );
+				if ( $post_date_key !== $filter_term ) {
 					continue;
 				}
 			} else {
@@ -294,10 +308,11 @@ function apql_filter_render_meta_groups( $attributes, $content, $block, $wp_quer
  * @return string HTML output.
  */
 function apql_filter_render_block( $attributes, $content = '', $block = null ) {
-	$group_by   = isset( $attributes['groupBy'] ) && is_string( $attributes['groupBy'] ) ? $attributes['groupBy'] : 'taxonomy';
-	$taxonomy   = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : '';
-	$meta_key   = isset( $attributes['metaKey'] ) && is_string( $attributes['metaKey'] ) ? $attributes['metaKey'] : '';
-	$meta_type  = isset( $attributes['metaType'] ) && is_string( $attributes['metaType'] ) ? $attributes['metaType'] : 'string';
+	$group_by    = isset( $attributes['groupBy'] ) && is_string( $attributes['groupBy'] ) ? $attributes['groupBy'] : 'taxonomy';
+	$taxonomy    = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : '';
+	$meta_key    = isset( $attributes['metaKey'] ) && is_string( $attributes['metaKey'] ) ? $attributes['metaKey'] : '';
+	$meta_type   = isset( $attributes['metaType'] ) && is_string( $attributes['metaType'] ) ? $attributes['metaType'] : 'string';
+	$date_field  = isset( $attributes['dateField'] ) && is_string( $attributes['dateField'] ) ? $attributes['dateField'] : 'post_date';
 	$date_format = isset( $attributes['dateFormat'] ) && is_string( $attributes['dateFormat'] ) ? $attributes['dateFormat'] : 'F j, Y';
 
 	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
@@ -317,11 +332,165 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 	}
 
 	// Branch based on groupBy mode
-	if ( 'meta' === $group_by ) {
+	if ( 'date' === $group_by ) {
+		return apql_filter_render_date_groups( $attributes, $content, $block, $wp_query, $date_field, $date_format );
+	} elseif ( 'meta' === $group_by ) {
 		return apql_filter_render_meta_groups( $attributes, $content, $block, $wp_query, $meta_key, $meta_type, $date_format );
 	} else {
 		return apql_filter_render_taxonomy_groups( $attributes, $content, $block, $wp_query, $taxonomy );
 	}
+}
+
+/**
+ * Helper: Render groups based on WordPress date fields (post_date or post_modified).
+ */
+function apql_filter_render_date_groups( $attributes, $content, $block, $wp_query, $date_field, $date_format ) {
+	// Validate date field
+	if ( ! in_array( $date_field, array( 'post_date', 'post_modified' ), true ) ) {
+		$date_field = 'post_date';
+	}
+
+	// Collect all date values from current page posts
+	$groups = array();
+	foreach ( $wp_query->posts as $post ) {
+		if ( ! is_object( $post ) ) {
+			continue;
+		}
+		$post_id = isset( $post->ID ) ? (int) $post->ID : 0;
+		if ( ! $post_id ) {
+			continue;
+		}
+		
+		// Get the date value from the post object
+		$date_value = isset( $post->$date_field ) ? $post->$date_field : '';
+		if ( ! $date_value ) {
+			continue;
+		}
+
+		// Convert to YYYY-MM-DD format for grouping
+		$timestamp = strtotime( $date_value );
+		if ( ! $timestamp ) {
+			continue;
+		}
+		$key = date( 'Y-m-d', $timestamp );
+		
+		if ( ! isset( $groups[ $key ] ) ) {
+			// Format display name based on date format
+			$display_name = date_i18n( $date_format, $timestamp );
+			
+			$groups[ $key ] = array(
+				'value'     => $key,
+				'name'      => $display_name,
+				'timestamp' => $timestamp,
+				'count'     => 0,
+			);
+		}
+		++$groups[ $key ]['count'];
+	}
+
+	if ( empty( $groups ) ) {
+		return '<div class="apql-filter apql-filter--empty">' . esc_html__( 'No posts found.', 'apql-gallery' ) . '</div>';
+	}
+
+	// Sort groups
+	$order_by = isset( $attributes['termOrderBy'] ) ? (string) $attributes['termOrderBy'] : 'name';
+	$order    = isset( $attributes['termOrder'] ) ? strtolower( (string) $attributes['termOrder'] ) : 'desc';
+	$order    = in_array( $order, array( 'asc', 'desc' ), true ) ? $order : 'desc';
+
+	uasort(
+		$groups,
+		function ( $a, $b ) use ( $order_by, $order ) {
+			$va = $vb = null;
+			
+			switch ( $order_by ) {
+				case 'count':
+					$va = isset( $a['count'] ) ? (int) $a['count'] : 0;
+					$vb = isset( $b['count'] ) ? (int) $b['count'] : 0;
+					break;
+				case 'name':
+				default:
+					// Sort by timestamp for proper date ordering
+					$va = isset( $a['timestamp'] ) ? (int) $a['timestamp'] : 0;
+					$vb = isset( $b['timestamp'] ) ? (int) $b['timestamp'] : 0;
+					break;
+			}
+
+			if ( is_int( $va ) && is_int( $vb ) ) {
+				$cmp = $va <=> $vb;
+			} else {
+				$cmp = strcmp( (string) $va, (string) $vb );
+			}
+
+			return 'desc' === $order ? -$cmp : $cmp;
+		}
+	);
+
+	// Get inner blocks structure
+	$inner_blocks_list = array();
+	if ( is_object( $block ) && isset( $block->parsed_block ) && is_array( $block->parsed_block ) ) {
+		if ( isset( $block->parsed_block['innerBlocks'] ) && is_array( $block->parsed_block['innerBlocks'] ) ) {
+			$inner_blocks_list = $block->parsed_block['innerBlocks'];
+		}
+	}
+	if ( empty( $inner_blocks_list ) ) {
+		if ( is_object( $block ) && property_exists( $block, 'innerBlocks' ) && is_array( $block->innerBlocks ) ) {
+			$inner_blocks_list = $block->innerBlocks;
+		} elseif ( is_object( $block ) && property_exists( $block, 'inner_blocks' ) && is_array( $block->inner_blocks ) ) {
+			$inner_blocks_list = $block->inner_blocks;
+		}
+	}
+
+	// Render a section for each date with context provided
+	$out = '<div class="apql-filter apql-filter--date" data-date-field="' . esc_attr( $date_field ) . '">';
+
+	foreach ( $groups as $key => $data ) {
+		$value = $data['value'];
+		$name  = $data['name'];
+
+		$date_obj = array(
+			'value'     => $value,
+			'name'      => $name,
+			'timestamp' => $data['timestamp'],
+		);
+
+		$out .= '<section class="apql-filter__group apql-filter__group--date-' . esc_attr( sanitize_title( $value ) ) . '">';
+
+		if ( ! empty( $inner_blocks_list ) ) {
+			// Render each inner block with updated context
+			foreach ( $inner_blocks_list as $inner_block ) {
+				// Build child context with date information
+				$child_context                      = is_array( $block->context ) ? $block->context : array();
+				$child_context['apql/filterTax']    = $date_field; // Reuse for date field
+				$child_context['apql/filterTerm']   = $value;
+				$child_context['apql/currentTerm']  = $date_obj;
+
+				// If inner_block is already a WP_Block instance, convert to parsed
+				// If it's an array (from parsed_block), use it directly
+				if ( $inner_block instanceof WP_Block ) {
+					$parsed_child = ap_qg_block_to_parsed( $inner_block );
+				} elseif ( is_array( $inner_block ) ) {
+					$parsed_child = $inner_block;
+				} else {
+					continue; // Skip invalid blocks
+				}
+
+				// Create new WP_Block with updated context
+				$child_block = new WP_Block( $parsed_child, $child_context );
+				$out        .= $child_block->render();
+			}
+		} else {
+			// Fallback: show placeholder if no inner blocks
+			$out .= '<div class="apql-filter__empty-placeholder">';
+			$out .= '<h3>' . esc_html( $name ) . '</h3>';
+			$out .= '<p><em>' . esc_html__( 'Add blocks inside "APQL Filter" to compose your layout (e.g., APQL Gallery, etc.).', 'apql-gallery' ) . '</em></p>';
+			$out .= '</div>';
+		}
+
+		$out .= '</section>';
+	}
+
+	$out .= '</div>';
+	return $out;
 }
 
 /**

@@ -66,6 +66,7 @@ registerBlockType('apql/filter', {
     taxonomy: { type: 'string', default: '' },
     metaKey: { type: 'string', default: '' },
     metaType: { type: 'string', default: 'string' },
+    dateField: { type: 'string', default: 'post_date' },
     dateFormat: { type: 'string', default: 'F j, Y' },
     termOrderBy: { type: 'string', default: 'name' },
     termOrder: { type: 'string', default: 'desc' },
@@ -104,6 +105,7 @@ registerBlockType('apql/filter', {
               options={ [
                 { label: __('Taxonomy', 'apql-gallery'), value: 'taxonomy' },
                 { label: __('Meta Field', 'apql-gallery'), value: 'meta' },
+                { label: __('WordPress Date', 'apql-gallery'), value: 'date' },
               ] }
               onChange={ ( value ) => setAttributes( { groupBy: value } ) }
             />
@@ -161,6 +163,26 @@ registerBlockType('apql/filter', {
               </>
             ) }
             
+            { attributes.groupBy === 'date' && (
+              <>
+                <SelectControl
+                  label={ __('Date Field', 'apql-gallery') }
+                  value={ attributes.dateField || 'post_date' }
+                  options={ [
+                    { label: __('Published Date', 'apql-gallery'), value: 'post_date' },
+                    { label: __('Modified Date', 'apql-gallery'), value: 'post_modified' },
+                  ] }
+                  onChange={ ( value ) => setAttributes( { dateField: value } ) }
+                />
+                <TextControl
+                  label={ __('Date Format', 'apql-gallery') }
+                  help={ __('PHP date format (e.g., F j, Y for "November 19, 2025")', 'apql-gallery') }
+                  value={ attributes.dateFormat || 'F j, Y' }
+                  onChange={ (value) => setAttributes({ dateFormat: value }) }
+                />
+              </>
+            ) }
+            
             <SelectControl
               label={ __('Order By', 'apql-gallery') }
               value={ attributes.termOrderBy || 'name' }
@@ -187,7 +209,9 @@ registerBlockType('apql/filter', {
           <div style={{ padding: '1rem', border: '2px dashed #8b5cf6', background: '#faf5ff' }}>
             <p style={{ margin: 0, fontWeight: 600, color: '#7c3aed' }}>
               🔗 { __('APQL Filter', 'apql-gallery') } 
-              { attributes.groupBy === 'taxonomy' ? ` (${attributes.taxonomy})` : ` (${attributes.metaKey})` }
+              { attributes.groupBy === 'taxonomy' ? ` (${attributes.taxonomy})` : 
+                attributes.groupBy === 'date' ? ` (${attributes.dateField})` : 
+                ` (${attributes.metaKey})` }
             </p>
             <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.85rem', color: '#666' }}>
               { __('Add blocks below (e.g., APQL Term Name, APQL Gallery) to compose the layout for each group.', 'apql-gallery') }
