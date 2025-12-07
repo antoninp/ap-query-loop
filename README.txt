@@ -2,7 +2,7 @@
 Contributors: Antonin Puleo
 Tags: query loop, gallery, taxonomy, block, gutenberg, meow gallery
 Requires at least: 6.5
-Tested up to: 6.5
+Tested up to: 6.9
 Requires PHP: 7.4
 Stable tag: 0.2.5
 License: GPLv2 or later

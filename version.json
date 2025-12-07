@@ -1,7 +1,14 @@
 {
-  "version": "0.2.5",
-  "summary": "Release script fix",
+  "version": "0.2.6",
+  "summary": "WordPress 6.9 compatibility and feature enhancements",
   "changes": [
-    "Fixed readme.txt changelog not updated by release script"
+    "Updated WordPress compatibility to 6.9",
+    "Added attribute to control Meow Gallery options in APQL Gallery block",
+    "Added HTML tag option and orientation setting for Term Name block",
+    "Added filtering by standard WordPress date (post_date and post_modified)",
+    "Fixed: Term link ('Make term a link') not working properly",
+    "Fixed: APQL Gallery not usable outside of APQL Filter - added passthrough mode",
+    "Removed unnecessary APQL preview in editor",
+    "Removed redundant 'no post found' message (handled by WP No Results block)"
   ]
 }
