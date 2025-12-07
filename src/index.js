@@ -205,23 +205,10 @@ registerBlockType('apql/filter', {
             />
           </PanelBody>
         </InspectorControls>
-        <div { ...blockProps }>
-          <div style={{ padding: '1rem', border: '2px dashed #8b5cf6', background: '#faf5ff' }}>
-            <p style={{ margin: 0, fontWeight: 600, color: '#7c3aed' }}>
-              🔗 { __('APQL Filter', 'apql-gallery') } 
-              { attributes.groupBy === 'taxonomy' ? ` (${attributes.taxonomy})` : 
-                attributes.groupBy === 'date' ? ` (${attributes.dateField})` : 
-                ` (${attributes.metaKey})` }
-            </p>
-            <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.85rem', color: '#666' }}>
-              { __('Add blocks below (e.g., APQL Term Name, APQL Gallery) to compose the layout for each group.', 'apql-gallery') }
-            </p>
-            <InnerBlocks
-              template={ TEMPLATE }
-              templateLock={ false }
-            />
-          </div>
-        </div>
+        <InnerBlocks
+          template={ TEMPLATE }
+          templateLock={ false }
+        />
       </>
     );
   },
