@@ -103,10 +103,71 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
 
 	$html = '';
 	if ( $has_meow ) {
+		// Build shortcode with gallery options - only include explicitly set attributes
+		$shortcode_atts = array(
+			'ids' => $ids_csv,
+		);
+
+		// Layout
+		if ( isset( $attributes['layout'] ) && $attributes['layout'] !== '' ) {
+			$shortcode_atts['layout'] = sanitize_text_field( $attributes['layout'] );
+		}
+
+		// Columns
+		if ( isset( $attributes['columns'] ) && $attributes['columns'] !== '' && $attributes['columns'] !== null ) {
+			$shortcode_atts['columns'] = intval( $attributes['columns'] );
+		}
+
+		// Gutter
+		if ( isset( $attributes['gutter'] ) && $attributes['gutter'] !== '' && $attributes['gutter'] !== null ) {
+			$shortcode_atts['gutter'] = intval( $attributes['gutter'] );
+		}
+
+		// Row height (for justified layout)
+		if ( isset( $attributes['rowHeight'] ) && $attributes['rowHeight'] !== '' && $attributes['rowHeight'] !== null ) {
+			$shortcode_atts['row-height'] = intval( $attributes['rowHeight'] );
+		}
+
+		// Image size
+		if ( isset( $attributes['size'] ) && $attributes['size'] !== '' ) {
+			$shortcode_atts['size'] = sanitize_text_field( $attributes['size'] );
+		}
+
+		// Animation
+		if ( isset( $attributes['animation'] ) && $attributes['animation'] !== '' ) {
+			$shortcode_atts['animation'] = sanitize_text_field( $attributes['animation'] );
+		}
+
+		// Captions
+		if ( isset( $attributes['captions'] ) && $attributes['captions'] !== '' ) {
+			$shortcode_atts['captions'] = sanitize_text_field( $attributes['captions'] );
+		}
+
+		// Image link behavior
+		if ( isset( $attributes['link'] ) && $attributes['link'] !== '' ) {
+			$shortcode_atts['link'] = sanitize_text_field( $attributes['link'] );
+		}
+
+		// Custom CSS class
+		if ( isset( $attributes['customClass'] ) && $attributes['customClass'] !== '' ) {
+			$shortcode_atts['custom-class'] = sanitize_text_field( $attributes['customClass'] );
+		}
+
+		// Alignment
+		if ( isset( $attributes['align'] ) && $attributes['align'] !== '' ) {
+			$shortcode_atts['align'] = sanitize_text_field( $attributes['align'] );
+		}
+
+		// Build shortcode string with attributes
+		$atts_str = '';
+		foreach ( $shortcode_atts as $key => $value ) {
+			$atts_str .= ' ' . esc_attr( $key ) . '="' . esc_attr( $value ) . '"';
+		}
+
 		if ( isset( $shortcode_tags['meow-gallery'] ) ) {
-			$html = do_shortcode( '[meow-gallery ids="' . esc_attr( $ids_csv ) . '"]' );
+			$html = do_shortcode( '[meow-gallery' . $atts_str . ']' );
 		} elseif ( isset( $shortcode_tags['meow_gallery'] ) ) {
-			$html = do_shortcode( '[meow_gallery ids="' . esc_attr( $ids_csv ) . '"]' );
+			$html = do_shortcode( '[meow_gallery' . $atts_str . ']' );
 		}
 	}
 

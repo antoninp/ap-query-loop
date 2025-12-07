@@ -9,7 +9,19 @@
   "ancestor": ["core/query"],
   "usesContext": ["query", "queryId", "apql/filterTax", "apql/filterTerm"],
   "supports": { "html": false },
-  "attributes": {},
+  "attributes": {
+    "layout": { "type": "string" },
+    "columns": { "type": "number" },
+    "imageSize": { "type": "string" },
+    "gutter": { "type": "number" },
+    "rowHeight": { "type": "number" },
+    "animation": { "type": "string" },
+    "captions": { "type": "string" },
+    "link": { "type": "string" },
+    "customClass": { "type": "string" },
+    "align": { "type": "string" },
+    "size": { "type": "string" }
+  },
   "editorScript": "file:./build/index.js",
   "style": "file:./build/style-index.css"
 }

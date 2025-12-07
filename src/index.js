@@ -1,7 +1,7 @@
 import { registerBlockType, registerBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import ServerSideRender from '@wordpress/server-side-render';
-import { PanelBody, TextControl, SelectControl, Spinner, ToggleControl } from '@wordpress/components';
+import { PanelBody, TextControl, SelectControl, Spinner, ToggleControl, RangeControl } from '@wordpress/components';
 import { 
   InspectorControls, 
   BlockControls,
@@ -23,12 +23,155 @@ registerBlockType('apql/gallery', {
   description: __('Displays the current Query Loop posts as a gallery of featured images.', 'ap-query-loop'),
   icon: 'images-alt2',
   category: 'theme',
-  edit: () => (
-    <ServerSideRender
-      block="apql/gallery"
-      attributes={{}}
-    />
-  ),
+  attributes: {
+    layout: { type: 'string' },
+    columns: { type: 'number' },
+    imageSize: { type: 'string' },
+    gutter: { type: 'number' },
+    rowHeight: { type: 'number' },
+    animation: { type: 'string' },
+    captions: { type: 'string' },
+    link: { type: 'string' },
+    customClass: { type: 'string' },
+    align: { type: 'string' },
+    size: { type: 'string' }
+  },
+  edit: ({ attributes, setAttributes }) => {
+    const { 
+      layout,
+      columns,
+      imageSize,
+      gutter,
+      rowHeight,
+      animation,
+      captions,
+      link,
+      customClass,
+      align,
+      size
+    } = attributes;
+    
+    return (
+      <>
+        <InspectorControls>
+          <PanelBody title={ __('Gallery Settings', 'apql-gallery') } initialOpen={ true }>
+            <SelectControl
+              label={ __('Layout', 'apql-gallery') }
+              value={ layout || '' }
+              options={ [
+                { label: __('Default', 'apql-gallery'), value: '' },
+                { label: __('Tiles', 'apql-gallery'), value: 'tiles' },
+                { label: __('Masonry', 'apql-gallery'), value: 'masonry' },
+                { label: __('Justified', 'apql-gallery'), value: 'justified' },
+                { label: __('Square Grid', 'apql-gallery'), value: 'square' },
+                { label: __('Cascade', 'apql-gallery'), value: 'cascade' },
+              ] }
+              onChange={ (value) => setAttributes({ layout: value || undefined }) }
+            />
+            { layout !== 'cascade' && layout && (
+              <RangeControl
+                label={ __('Columns', 'apql-gallery') }
+                value={ columns !== undefined ? columns : 0 }
+                onChange={ (value) => setAttributes({ columns: value }) }
+                onReset={ () => setAttributes({ columns: undefined }) }
+                min={ 0 }
+                max={ 6 }
+                allowReset={ true }
+              />
+            ) }
+            <RangeControl
+              label={ __('Gutter (px)', 'apql-gallery') }
+              value={ gutter !== undefined ? gutter : 0 }
+              onChange={ (value) => setAttributes({ gutter: value }) }
+              onReset={ () => setAttributes({ gutter: undefined }) }
+              min={ 0 }
+              max={ 50 }
+              allowReset={ true }
+            />
+            { layout === 'justified' && (
+              <RangeControl
+                label={ __('Row Height (px)', 'apql-gallery') }
+                value={ rowHeight !== undefined ? rowHeight : 0 }
+                onChange={ (value) => setAttributes({ rowHeight: value }) }
+                onReset={ () => setAttributes({ rowHeight: undefined }) }
+                min={ 0 }
+                max={ 10000 }
+                allowReset={ true }
+              />
+            ) }
+            <SelectControl
+              label={ __('Image Size', 'apql-gallery') }
+              value={ size || '' }
+              options={ [
+                { label: __('Default', 'apql-gallery'), value: '' },
+                { label: __('Thumbnail', 'apql-gallery'), value: 'thumbnail' },
+                { label: __('Medium', 'apql-gallery'), value: 'medium' },
+                { label: __('Large', 'apql-gallery'), value: 'large' },
+                { label: __('Full Size', 'apql-gallery'), value: 'full' },
+              ] }
+              onChange={ (value) => setAttributes({ size: value || undefined }) }
+            />
+            <SelectControl
+              label={ __('Animation', 'apql-gallery') }
+              value={ animation || '' }
+              options={ [
+                { label: __('Default', 'apql-gallery'), value: '' },
+                { label: __('None', 'apql-gallery'), value: 'none' },
+                { label: __('Zoom In', 'apql-gallery'), value: 'zoom-in' },
+                { label: __('Zoom Out', 'apql-gallery'), value: 'zoom-out' },
+                { label: __('Fade In', 'apql-gallery'), value: 'fade-in' },
+                { label: __('Fade Out', 'apql-gallery'), value: 'fade-out' },
+                { label: __('Colorize', 'apql-gallery'), value: 'colorize' },
+              ] }
+              onChange={ (value) => setAttributes({ animation: value || undefined }) }
+            />
+            <SelectControl
+              label={ __('Captions', 'apql-gallery') }
+              value={ captions || '' }
+              options={ [
+                { label: __('Default', 'apql-gallery'), value: '' },
+                { label: __('Attachment Title', 'apql-gallery'), value: 'attachment-title' },
+                { label: __('Attachment Caption', 'apql-gallery'), value: 'attachment-caption' },
+                { label: __('Image Description', 'apql-gallery'), value: 'image-description' },
+              ] }
+              onChange={ (value) => setAttributes({ captions: value || undefined }) }
+            />
+            <SelectControl
+              label={ __('Image Link', 'apql-gallery') }
+              value={ link || '' }
+              options={ [
+                { label: __('Default', 'apql-gallery'), value: '' },
+                { label: __('Attachment Page', 'apql-gallery'), value: 'attachment' },
+                { label: __('Media File', 'apql-gallery'), value: 'file' },
+                { label: __('None', 'apql-gallery'), value: 'none' },
+              ] }
+              onChange={ (value) => setAttributes({ link: value || undefined }) }
+            />
+            <TextControl
+              label={ __('Custom CSS Class', 'apql-gallery') }
+              value={ customClass || '' }
+              onChange={ (value) => setAttributes({ customClass: value || undefined }) }
+            />
+            <SelectControl
+              label={ __('Alignment', 'apql-gallery') }
+              value={ align || '' }
+              options={ [
+                { label: __('Default', 'apql-gallery'), value: '' },
+                { label: __('Left', 'apql-gallery'), value: 'left' },
+                { label: __('Center', 'apql-gallery'), value: 'center' },
+                { label: __('Right', 'apql-gallery'), value: 'right' },
+              ] }
+              onChange={ (value) => setAttributes({ align: value || undefined }) }
+            />
+          </PanelBody>
+        </InspectorControls>
+        <ServerSideRender
+          block="apql/gallery"
+          attributes={ attributes }
+        />
+      </>
+    );
+  },
   save: () => null
 });
 
