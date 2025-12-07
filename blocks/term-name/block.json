@@ -28,6 +28,7 @@
       "__experimentalTextTransform": true,
       "__experimentalTextDecoration": true,
       "__experimentalLetterSpacing": true,
+      "__experimentalWritingMode": true,
       "__experimentalDefaultControls": {
         "fontSize": true
       }
@@ -39,6 +40,7 @@
   },
   "attributes": {
     "textAlign": { "type": "string" },
+    "tagName": { "type": "string", "default": "h2" },
     "prefix": { "type": "string", "default": "" },
     "suffix": { "type": "string", "default": "" },
     "isLink": { "type": "boolean", "default": false }

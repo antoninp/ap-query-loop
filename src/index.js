@@ -237,12 +237,13 @@ registerBlockType('apql/term-name', {
   category: 'theme',
   attributes: {
     textAlign: { type: 'string' },
+    tagName: { type: 'string', default: 'h2' },
     prefix: { type: 'string', default: '' },
     suffix: { type: 'string', default: '' },
     isLink: { type: 'boolean', default: false }
   },
   edit: ({ attributes, setAttributes }) => {
-    const { textAlign, prefix = '', suffix = '', isLink = false } = attributes;
+    const { textAlign, tagName = 'h2', prefix = '', suffix = '', isLink = false } = attributes;
     
     const blockProps = useBlockProps({
       className: textAlign ? `has-text-align-${textAlign}` : undefined,
@@ -258,6 +259,22 @@ registerBlockType('apql/term-name', {
         </BlockControls>
         <InspectorControls>
           <PanelBody title={ __('Settings', 'apql-gallery') } initialOpen={ true }>
+            <SelectControl
+              label={ __('HTML element', 'apql-gallery') }
+              value={ tagName }
+              options={ [
+                { label: __('H1', 'apql-gallery'), value: 'h1' },
+                { label: __('H2', 'apql-gallery'), value: 'h2' },
+                { label: __('H3', 'apql-gallery'), value: 'h3' },
+                { label: __('H4', 'apql-gallery'), value: 'h4' },
+                { label: __('H5', 'apql-gallery'), value: 'h5' },
+                { label: __('H6', 'apql-gallery'), value: 'h6' },
+                { label: __('Paragraph', 'apql-gallery'), value: 'p' },
+                { label: __('Div', 'apql-gallery'), value: 'div' },
+                { label: __('Span', 'apql-gallery'), value: 'span' },
+              ] }
+              onChange={ (value) => setAttributes({ tagName: value }) }
+            />
             <ToggleControl
               label={ __('Make term a link', 'apql-gallery') }
               checked={ isLink }

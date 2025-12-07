@@ -752,9 +752,15 @@ function apql_filter_render_taxonomy_groups( $attributes, $content, $block, $wp_
 function apql_term_name_render_block( $attributes, $content = '', $block = null ) {
 	$prefix     = isset( $attributes['prefix'] ) && is_string( $attributes['prefix'] ) ? $attributes['prefix'] : '';
 	$suffix     = isset( $attributes['suffix'] ) && is_string( $attributes['suffix'] ) ? $attributes['suffix'] : '';
+	$tag_name   = isset( $attributes['tagName'] ) && is_string( $attributes['tagName'] ) ? $attributes['tagName'] : 'h2';
 	// Handle isLink as both boolean and string for compatibility
 	$is_link    = ! empty( $attributes['isLink'] ) && ( $attributes['isLink'] === true || $attributes['isLink'] === 'true' || $attributes['isLink'] === 1 );
 	$text_align = isset( $attributes['textAlign'] ) && is_string( $attributes['textAlign'] ) ? $attributes['textAlign'] : '';
+
+	// Validate tag name
+	if ( ! in_array( $tag_name, array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span' ), true ) ) {
+		$tag_name = 'h2';
+	}
 
 	$term = ( $block instanceof WP_Block && ! empty( $block->context['apql/currentTerm'] ) ) ? $block->context['apql/currentTerm'] : null;
 	
@@ -804,5 +810,5 @@ function apql_term_name_render_block( $attributes, $content = '', $block = null 
 		$term_content = $term_text;
 	}
 
-	return '<div ' . $wrapper_attributes . '>' . $term_content . '</div>';
+	return '<' . $tag_name . ' ' . $wrapper_attributes . '>' . $term_content . '</' . $tag_name . '>';
 }
