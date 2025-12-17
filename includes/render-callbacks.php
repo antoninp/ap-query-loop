@@ -448,6 +448,8 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 				'name'      => $display_name,
 				'timestamp' => $timestamp,
 				'count'     => 0,
+				// Store a representative post ID for this date group
+				'sample_post_id' => $post_id,
 			);
 		}
 		++$groups[ $key ]['count'];
@@ -512,6 +514,22 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 		$value = $data['value'];
 		$name  = $data['name'];
 
+		// Determine a representative post ID for this group to provide post context
+		$sample_post_id = isset( $data['sample_post_id'] ) ? (int) $data['sample_post_id'] : 0;
+		if ( ! $sample_post_id ) {
+			// Fallback: find the first post in the current query that matches this group's date
+			foreach ( $wp_query->posts as $p ) {
+				$pid = isset( $p->ID ) ? (int) $p->ID : 0;
+				if ( ! $pid ) { continue; }
+				$dv = isset( $p->$date_field ) ? $p->$date_field : '';
+				if ( ! $dv ) { continue; }
+				$ts = strtotime( $dv );
+				if ( ! $ts ) { continue; }
+				$k  = date( 'Y-m-d', $ts );
+				if ( $k === $value ) { $sample_post_id = $pid; break; }
+			}
+		}
+
 		$date_obj = array(
 			'value'     => $value,
 			'name'      => $name,
@@ -529,9 +547,11 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 				$child_context['apql/filterTerm']   = $value;
 				$child_context['apql/currentTerm']  = $date_obj;
 
-				// Add post context for core blocks like Post Date
-				$child_context['postId'] = get_the_ID();
-				$child_context['postType'] = get_post_type();
+				// Add post context using the representative post so core Post Date shows the group's date
+				if ( $sample_post_id ) {
+					$child_context['postId'] = $sample_post_id;
+					$child_context['postType'] = get_post_type( $sample_post_id );
+				}
 
 				// If inner_block is already a WP_Block instance, convert to parsed
 				// If it's an array (from parsed_block), use it directly
