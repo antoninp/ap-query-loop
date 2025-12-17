@@ -333,6 +333,10 @@ function apql_filter_render_meta_groups( $attributes, $content, $block, $wp_quer
 				$child_context['apql/filterTerm']   = $value;
 				$child_context['apql/currentTerm']  = $term_obj;
 
+				// Add post context for core blocks like Post Date
+				$child_context['postId'] = get_the_ID();
+				$child_context['postType'] = get_post_type();
+
 				// Create WP_Block with updated context
 				if ( $inner_block instanceof WP_Block ) {
 					$parsed_child = ap_qg_block_to_parsed( $inner_block );
@@ -525,6 +529,10 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 				$child_context['apql/filterTerm']   = $value;
 				$child_context['apql/currentTerm']  = $date_obj;
 
+				// Add post context for core blocks like Post Date
+				$child_context['postId'] = get_the_ID();
+				$child_context['postType'] = get_post_type();
+
 				// If inner_block is already a WP_Block instance, convert to parsed
 				// If it's an array (from parsed_block), use it directly
 				if ( $inner_block instanceof WP_Block ) {
@@ -584,6 +592,10 @@ function apql_filter_render_passthrough( $attributes, $content, $block ) {
 		foreach ( $inner_blocks_list as $inner_block ) {
 			// Pass through the current context without modification
 			$child_context = is_array( $block->context ) ? $block->context : array();
+
+			// Add post context for core blocks like Post Date
+			$child_context['postId'] = get_the_ID();
+			$child_context['postType'] = get_post_type();
 
 			// If inner_block is already a WP_Block instance, convert to parsed
 			// If it's an array (from parsed_block), use it directly
@@ -767,6 +779,10 @@ function apql_filter_render_taxonomy_groups( $attributes, $content, $block, $wp_
 				$child_context['apql/filterTax']    = $taxonomy;
 				$child_context['apql/filterTerm']   = $slug;
 				$child_context['apql/currentTerm']  = $term_obj;
+
+				// Add post context for core blocks like Post Date
+				$child_context['postId'] = get_the_ID();
+				$child_context['postType'] = get_post_type();
 
 				// If inner_block is already a WP_Block instance, convert to parsed
 				// If it's an array (from parsed_block), use it directly
