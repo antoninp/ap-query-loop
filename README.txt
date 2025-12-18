@@ -4,7 +4,7 @@ Tags: query loop, gallery, taxonomy, block, gutenberg, meow gallery
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.2.6
+Stable tag: 0.2.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,10 @@ Yes. APQL Filter supports three grouping modes:
 - **Date**: Group by standard WordPress date fields (`post_date` for published date or `post_modified` for last modified date).
 
 == Changelog ==
+
+= 0.2.7 - Date grouping context and filtering bug fixes =
+- Fixed: APQL Filter not passing post context to inner blocks - post date block now shows correct date per group
+- Fixed: Date grouping now correctly uses the date string as the group identifier
 
 = 0.2.6 - WordPress 6.9 compatibility and feature enhancements =
 - Updated WordPress compatibility to 6.9

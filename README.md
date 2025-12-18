@@ -222,6 +222,10 @@ ap-query-loop/
 
 ## Changelog
 
+### 0.2.7 - Date grouping context and filtering bug fixes
+- Fixed: APQL Filter not passing post context to inner blocks - post date block now shows correct date per group
+- Fixed: Date grouping now correctly uses the date string as the group identifier
+
 ### 0.2.6 - WordPress 6.9 compatibility and feature enhancements
 - Updated WordPress compatibility to 6.9
 - Added attribute to control Meow Gallery options in APQL Gallery block
