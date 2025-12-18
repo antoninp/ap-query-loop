@@ -30,7 +30,7 @@ Each block integrates seamlessly with the WordPress block editor, providing serv
 
 ## Requirements
 
-- WordPress 6.5 or higher
+- WordPress 6.9 or higher
 - PHP 7.4 or higher
 - Node.js and npm (for development only)
 - Meow Gallery (optional, but recommended for enhanced gallery features)
