@@ -16,7 +16,7 @@ Each block integrates seamlessly with the WordPress block editor, providing serv
 
 - **APQL Gallery Block**: Context-aware gallery rendering with full Meow Gallery options control
 - **Gallery Options**: Customize layout (tiles, masonry, justified, square, cascade), columns, gutter, row height, animations, captions, link behavior, custom CSS, and alignment
-- **APQL Filter Block**: Group posts by taxonomy, post meta, or WordPress date fields (`post_date`, `post_modified`)
+- **APQL Filter Block**: Group posts by taxonomy, post meta, or WordPress date fields (`post_date`, `post_modified`) with year/month/day intervals and matching archive links
 - **APQL Term Name Block**: Display term names with HTML tag selection (H2/H3/H4), prefix/suffix, optional linking, and full styling controls including writing mode
 - **Server-Side Rendering**: Preview actual gallery output directly in the editor
 - **Meow Gallery Integration**: Automatically uses Meow Gallery shortcode when available with full control over all gallery options
@@ -76,7 +76,7 @@ The APQL Filter block groups Query Loop posts by a taxonomy, a meta key, or Word
 - **Grouping Mode**: `taxonomy` (default), `meta`, or `date`
 - **Taxonomy Selection** (taxonomy mode): Choose from registered taxonomies via dropdown or enter a custom slug
 - **Meta Selection** (meta mode): Provide `metaKey`; optionally set `metaType` (`string` or `date`) and `dateFormat` (default `F j, Y`)
-- **Date Selection** (date mode): Choose `post_date` (published date) or `post_modified` (last modified date); posts are automatically grouped by date with chronological ordering
+- **Date Selection** (date mode): Choose `post_date` (published date) or `post_modified` (last modified date); group dates by year, month, or day with chronological ordering and archive-friendly links
 - **Ordering**: Sort terms (taxonomy mode) by name, slug, ID, post count, or date extracted from name; sort meta groups by value or count; date groups sort chronologically; choose ascending/descending (default descending)
 - **Context Provision**: Passes context to child blocks so they render per-group content:
   - `apql/currentTerm`: Group descriptor (term object for taxonomy; name/value for meta; date string for date mode)
@@ -190,14 +190,14 @@ ap-query-loop/
 
 1. **Grouping Modes**: `taxonomy` mode groups by terms; `meta` mode groups by meta values from the current page's posts; `date` mode groups by WordPress date fields (`post_date` or `post_modified`).
 2. **Ordering**: For taxonomy, sort by name/slug/id/count/date_name; for meta, sort by value (string) or by count; for date, sort chronologically.
-3. **Date Presentation**: In meta mode when `metaType` is `date`, values are formatted using `dateFormat` for headings while preserving raw value for filtering. In date mode, posts are automatically grouped by date (YYYY-MM-DD format) from the selected date field.
+3. **Date Presentation**: In meta mode when `metaType` is `date`, values are formatted using `dateFormat` for headings while preserving raw value for filtering. In date mode, posts are grouped by the selected interval (year/month/day) from the chosen date field, with matching archive links.
 4. **Context Injection**: For each group, sets context and renders child InnerBlocks with group-specific data.
 5. **InnerBlocks Serialization**: Saves child blocks to post content for server-side rendering with injected context.
 
 ### APQL Term Name
 
 1. **Context Consumption**: Reads `apql/currentTerm` and `apql/filterTax` from parent APQL Filter.
-2. **Display Options**: Renders term name with optional prefix/suffix and linking to term archive.
+2. **Display Options**: Renders term name with optional prefix/suffix and linking to term archive; when grouping by date, links point to the corresponding year/month/day archive.
 3. **Styling Support**: Full WordPress block supports for typography, colors, and spacing.
 4. **Server-Side Render**: Dynamically generates output based on context and block attributes.
 

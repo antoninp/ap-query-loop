@@ -28,7 +28,7 @@ Features:
 - Graceful fallback to core gallery HTML and legacy `[gallery]` shortcode when Meow Gallery is not available.
 - One-click Query Loop variation that composes Filter + Term Name + Gallery + No Results + Pagination.
 - Advanced ordering: post order (date, title, author, modified, menu order, random, comment count, ID) and group order (for taxonomy: name, slug, ID, count, date from name; for meta: value or count; for dates: chronological).
-- Flexible grouping: by taxonomy, by post meta, or by WordPress date fields (post_date, post_modified).
+- Flexible grouping: by taxonomy, by post meta, or by WordPress date fields (post_date, post_modified) with year/month/day intervals and archive-friendly links.
 - Archive compatible: works with inherited archive queries without creating custom queries.
 
 Requirements:
@@ -76,11 +76,11 @@ Notes:
    - Taxonomy-or-meta-or-date aware: when inside APQL Filter, filters by term (taxonomy mode), by exact meta value equality (meta mode), or by date (date mode).
 
 2. `apql/filter` — APQL Filter
-   - Groups current Query Loop posts by a chosen taxonomy, by a meta key, or by WordPress date fields.
+   - Groups current Query Loop posts by a chosen taxonomy, by a meta key, or by WordPress date fields with year/month/day grouping options.
    - Provides InnerBlocks to compose your per-group layout (e.g., Term Name + Gallery).
    - Taxonomy mode ordering: name, slug, ID, post count, or date extracted from term name.
    - Meta mode options: `metaKey`, optional `metaType` (`string` or `date`) and `dateFormat` for display.
-   - Date mode: Filter by standard WordPress date fields (`post_date` or `post_modified`) with automatic date grouping.
+   - Date mode: Filter by standard WordPress date fields (`post_date` or `post_modified`) with interval selection (year, month, or day) and matching archive links.
 
 3. `apql/term-name` — APQL Term Name
    - Displays current term name with optional link to term archive.
