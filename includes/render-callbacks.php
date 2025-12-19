@@ -33,8 +33,8 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
 	}
 
 	// Optional filtering context from parent group block
-	$filter_tax  = ( $block instanceof WP_Block && ! empty( $block->context['apql/filterTax'] ) ) ? (string) $block->context['apql/filterTax'] : '';
-	$filter_term = ( $block instanceof WP_Block && isset( $block->context['apql/filterTerm'] ) ) ? (string) $block->context['apql/filterTerm'] : '';
+	$filter_tax  = ( $block instanceof WP_Block && ! empty( $block->context['apql/filterTax'] ) ) ? sanitize_key( (string) $block->context['apql/filterTax'] ) : '';
+	$filter_term = ( $block instanceof WP_Block && isset( $block->context['apql/filterTerm'] ) ) ? sanitize_text_field( (string) $block->context['apql/filterTerm'] ) : '';
 
 	// Collect all featured images from current page posts
 	$image_ids = [];
@@ -375,13 +375,19 @@ function apql_filter_render_meta_groups( $attributes, $content, $block, $wp_quer
  * @return string HTML output.
  */
 function apql_filter_render_block( $attributes, $content = '', $block = null ) {
-	$group_by    = isset( $attributes['groupBy'] ) && is_string( $attributes['groupBy'] ) ? $attributes['groupBy'] : 'taxonomy';
-	$taxonomy    = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? $attributes['taxonomy'] : '';
-	$meta_key    = isset( $attributes['metaKey'] ) && is_string( $attributes['metaKey'] ) ? $attributes['metaKey'] : '';
-	$meta_type   = isset( $attributes['metaType'] ) && is_string( $attributes['metaType'] ) ? $attributes['metaType'] : 'string';
-	$date_field  = isset( $attributes['dateField'] ) && is_string( $attributes['dateField'] ) ? $attributes['dateField'] : 'post_date';
-	$date_format = isset( $attributes['dateFormat'] ) && is_string( $attributes['dateFormat'] ) ? $attributes['dateFormat'] : 'F j, Y';
-	$date_interval = isset( $attributes['dateInterval'] ) && is_string( $attributes['dateInterval'] ) ? $attributes['dateInterval'] : 'day';
+	$group_by    = isset( $attributes['groupBy'] ) && is_string( $attributes['groupBy'] ) ? sanitize_key( $attributes['groupBy'] ) : 'taxonomy';
+	$taxonomy    = isset( $attributes['taxonomy'] ) && is_string( $attributes['taxonomy'] ) ? sanitize_key( $attributes['taxonomy'] ) : '';
+	$meta_key    = isset( $attributes['metaKey'] ) && is_string( $attributes['metaKey'] ) ? sanitize_key( $attributes['metaKey'] ) : '';
+	$meta_type   = isset( $attributes['metaType'] ) && is_string( $attributes['metaType'] ) ? sanitize_key( $attributes['metaType'] ) : 'string';
+	$date_field  = isset( $attributes['dateField'] ) && is_string( $attributes['dateField'] ) ? sanitize_key( $attributes['dateField'] ) : 'post_date';
+	$date_format = isset( $attributes['dateFormat'] ) && is_string( $attributes['dateFormat'] ) ? sanitize_text_field( $attributes['dateFormat'] ) : 'F j, Y';
+	$date_interval = isset( $attributes['dateInterval'] ) && is_string( $attributes['dateInterval'] ) ? sanitize_key( $attributes['dateInterval'] ) : 'day';
+	
+	// Validate dateField against whitelist
+	$allowed_date_fields = array( 'post_date', 'post_modified' );
+	if ( ! in_array( $date_field, $allowed_date_fields, true ) ) {
+		$date_field = 'post_date';
+	}
 
 	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
 	if ( ! $use_context ) {
@@ -413,8 +419,9 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
  * Helper: Render groups based on WordPress date fields (post_date or post_modified).
  */
 function apql_filter_render_date_groups( $attributes, $content, $block, $wp_query, $date_field, $date_format, $date_interval = 'day' ) {
-	// Validate date field
-	if ( ! in_array( $date_field, array( 'post_date', 'post_modified' ), true ) ) {
+	// Validate date field - whitelist allowed fields
+	$allowed_date_fields = array( 'post_date', 'post_modified' );
+	if ( ! in_array( $date_field, $allowed_date_fields, true ) ) {
 		$date_field = 'post_date';
 	}
 	
