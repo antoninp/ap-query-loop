@@ -211,6 +211,7 @@ registerBlockType('apql/filter', {
     metaType: { type: 'string', default: 'string' },
     dateField: { type: 'string', default: 'post_date' },
     dateFormat: { type: 'string', default: 'F j, Y' },
+    dateInterval: { type: 'string', default: 'day' },
     termOrderBy: { type: 'string', default: 'name' },
     termOrder: { type: 'string', default: 'desc' },
   },
@@ -316,6 +317,16 @@ registerBlockType('apql/filter', {
                     { label: __('Modified Date', 'apql-gallery'), value: 'post_modified' },
                   ] }
                   onChange={ ( value ) => setAttributes( { dateField: value } ) }
+                />
+                <SelectControl
+                  label={ __('Group Date By', 'apql-gallery') }
+                  value={ attributes.dateInterval || 'day' }
+                  options={ [
+                    { label: __('Year', 'apql-gallery'), value: 'year' },
+                    { label: __('Month', 'apql-gallery'), value: 'month' },
+                    { label: __('Day', 'apql-gallery'), value: 'day' },
+                  ] }
+                  onChange={ ( value ) => setAttributes( { dateInterval: value } ) }
                 />
                 <TextControl
                   label={ __('Date Format', 'apql-gallery') }

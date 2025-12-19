@@ -73,8 +73,10 @@ function apql_gallery_render_block( $attributes, $content = '', $block = null ) 
 				if ( ! $timestamp ) {
 					continue;
 				}
+				// Use hierarchical matching: check if post_date_key starts with filter_term
+				// This handles year (YYYY), month (YYYY-MM), and day (YYYY-MM-DD) grouping
 				$post_date_key = date( 'Y-m-d', $timestamp );
-				if ( $post_date_key !== $filter_term ) {
+				if ( strpos( $post_date_key, $filter_term ) !== 0 ) {
 					continue;
 				}
 			} else {
@@ -379,6 +381,7 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 	$meta_type   = isset( $attributes['metaType'] ) && is_string( $attributes['metaType'] ) ? $attributes['metaType'] : 'string';
 	$date_field  = isset( $attributes['dateField'] ) && is_string( $attributes['dateField'] ) ? $attributes['dateField'] : 'post_date';
 	$date_format = isset( $attributes['dateFormat'] ) && is_string( $attributes['dateFormat'] ) ? $attributes['dateFormat'] : 'F j, Y';
+	$date_interval = isset( $attributes['dateInterval'] ) && is_string( $attributes['dateInterval'] ) ? $attributes['dateInterval'] : 'day';
 
 	$use_context = ( $block instanceof WP_Block ) && ! empty( $block->context['query'] );
 	if ( ! $use_context ) {
@@ -398,7 +401,7 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 
 	// Branch based on groupBy mode
 	if ( 'date' === $group_by ) {
-		return apql_filter_render_date_groups( $attributes, $content, $block, $wp_query, $date_field, $date_format );
+		return apql_filter_render_date_groups( $attributes, $content, $block, $wp_query, $date_field, $date_format, $date_interval );
 	} elseif ( 'meta' === $group_by ) {
 		return apql_filter_render_meta_groups( $attributes, $content, $block, $wp_query, $meta_key, $meta_type, $date_format );
 	} else {
@@ -409,10 +412,15 @@ function apql_filter_render_block( $attributes, $content = '', $block = null ) {
 /**
  * Helper: Render groups based on WordPress date fields (post_date or post_modified).
  */
-function apql_filter_render_date_groups( $attributes, $content, $block, $wp_query, $date_field, $date_format ) {
+function apql_filter_render_date_groups( $attributes, $content, $block, $wp_query, $date_field, $date_format, $date_interval = 'day' ) {
 	// Validate date field
 	if ( ! in_array( $date_field, array( 'post_date', 'post_modified' ), true ) ) {
 		$date_field = 'post_date';
+	}
+	
+	// Validate date interval
+	if ( ! in_array( $date_interval, array( 'year', 'month', 'day' ), true ) ) {
+		$date_interval = 'day';
 	}
 
 	// Collect all date values from current page posts
@@ -432,12 +440,25 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 			continue;
 		}
 
-		// Convert to YYYY-MM-DD format for grouping
+		// Generate grouping key based on interval
 		$timestamp = strtotime( $date_value );
 		if ( ! $timestamp ) {
 			continue;
 		}
-		$key = date( 'Y-m-d', $timestamp );
+		
+		// Create key based on interval: year (Y), month (Y-m), or day (Y-m-d)
+		switch ( $date_interval ) {
+			case 'year':
+				$key = date( 'Y', $timestamp );
+				break;
+			case 'month':
+				$key = date( 'Y-m', $timestamp );
+				break;
+			case 'day':
+			default:
+				$key = date( 'Y-m-d', $timestamp );
+				break;
+		}
 		
 		if ( ! isset( $groups[ $key ] ) ) {
 			// Format display name based on date format
@@ -518,6 +539,21 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 		$sample_post_id = isset( $data['sample_post_id'] ) ? (int) $data['sample_post_id'] : 0;
 		if ( ! $sample_post_id ) {
 			// Fallback: find the first post in the current query that matches this group's date
+			// Use the same date format as the grouping interval
+			$date_format_key = '';
+			switch ( $date_interval ) {
+				case 'year':
+					$date_format_key = 'Y';
+					break;
+				case 'month':
+					$date_format_key = 'Y-m';
+					break;
+				case 'day':
+				default:
+					$date_format_key = 'Y-m-d';
+					break;
+			}
+			
 			foreach ( $wp_query->posts as $p ) {
 				$pid = isset( $p->ID ) ? (int) $p->ID : 0;
 				if ( ! $pid ) { continue; }
@@ -525,7 +561,7 @@ function apql_filter_render_date_groups( $attributes, $content, $block, $wp_quer
 				if ( ! $dv ) { continue; }
 				$ts = strtotime( $dv );
 				if ( ! $ts ) { continue; }
-				$k  = date( 'Y-m-d', $ts );
+				$k  = date( $date_format_key, $ts );
 				if ( $k === $value ) { $sample_post_id = $pid; break; }
 			}
 		}
@@ -874,19 +910,49 @@ function apql_term_name_render_block( $attributes, $content = '', $block = null 
 
 	// Build the term link if needed
 	$term_link = '';
-	if ( $is_link && $taxonomy && function_exists( 'get_term_link' ) ) {
-		// Prefer the ID when present; otherwise resolve by slug.
-		if ( $term_id ) {
-			$term_link = get_term_link( $term_id, $taxonomy );
-		} elseif ( $slug ) {
-			$maybe_term = get_term_by( 'slug', $slug, $taxonomy );
-			if ( $maybe_term && ! is_wp_error( $maybe_term ) && isset( $maybe_term->term_id ) ) {
-				$term_link = get_term_link( $maybe_term->term_id, $taxonomy );
+	if ( $is_link && $taxonomy ) {
+		// Check if this is a date field grouping (post_date or post_modified)
+		if ( in_array( $taxonomy, array( 'post_date', 'post_modified' ), true ) ) {
+			// Build date archive link based on the timestamp
+			if ( ! empty( $term['timestamp'] ) ) {
+				$timestamp = (int) $term['timestamp'];
+				// Extract year, month, day from the timestamp
+				$year  = date( 'Y', $timestamp );
+				$month = date( 'm', $timestamp );
+				$day   = date( 'd', $timestamp );
+				
+				// Determine precision based on the date value format
+				// If value is just YYYY, link to year archive
+				// If value is YYYY-MM, link to month archive
+				// If value is YYYY-MM-DD, link to day archive
+				$value = isset( $term['value'] ) ? (string) $term['value'] : '';
+				
+				if ( preg_match( '/^\d{4}$/', $value ) ) {
+					// Year only
+					$term_link = get_year_link( $year );
+				} elseif ( preg_match( '/^\d{4}-\d{2}$/', $value ) ) {
+					// Year and month
+					$term_link = get_month_link( $year, $month );
+				} else {
+					// Full date (default)
+					$term_link = get_day_link( $year, $month, $day );
+				}
 			}
-		}
+		} elseif ( function_exists( 'get_term_link' ) ) {
+			// Regular taxonomy term link
+			// Prefer the ID when present; otherwise resolve by slug.
+			if ( $term_id ) {
+				$term_link = get_term_link( $term_id, $taxonomy );
+			} elseif ( $slug ) {
+				$maybe_term = get_term_by( 'slug', $slug, $taxonomy );
+				if ( $maybe_term && ! is_wp_error( $maybe_term ) && isset( $maybe_term->term_id ) ) {
+					$term_link = get_term_link( $maybe_term->term_id, $taxonomy );
+				}
+			}
 
-		if ( is_wp_error( $term_link ) ) {
-			$term_link = '';
+			if ( is_wp_error( $term_link ) ) {
+				$term_link = '';
+			}
 		}
 	}
 

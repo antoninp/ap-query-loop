@@ -19,6 +19,7 @@
     "metaKey": { "type": "string", "default": "" },
     "metaType": { "type": "string", "default": "string" },
     "dateFormat": { "type": "string", "default": "F j, Y" },
+    "dateInterval": { "type": "string", "default": "day" },
     "termOrderBy": { "type": "string", "default": "name" },
     "termOrder": { "type": "string", "default": "desc" }
   }
